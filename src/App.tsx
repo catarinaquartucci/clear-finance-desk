@@ -35,7 +35,7 @@ import MetasVendas from "./pages/financeiro/MetasVendas";
 import Bonus from "./pages/financeiro/Bonus";
 import Distribuicao from "./pages/financeiro/Distribuicao";
 import Cadastros from "./pages/financeiro/Cadastros";
-
+import ContasPagar from "./pages/financeiro/ContasPagar";
 const queryClient = new QueryClient();
 
 const App = () => (
@@ -87,6 +87,7 @@ const App = () => (
                   }>
                     <Route index element={<Navigate to="cadastros" replace />} />
                     <Route path="cadastros" element={<Cadastros />} />
+                    <Route path="contas-pagar" element={<ContasPagar />} />
                     <Route path="planejamento" element={<Planejamento />} />
                     <Route path="fluxo-caixa" element={<FluxoCaixa />} />
                     <Route path="analise-financeira" element={<AnaliseFinanceira />} />
