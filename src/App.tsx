@@ -34,6 +34,7 @@ import Impostos from "./pages/financeiro/Impostos";
 import MetasVendas from "./pages/financeiro/MetasVendas";
 import Bonus from "./pages/financeiro/Bonus";
 import Distribuicao from "./pages/financeiro/Distribuicao";
+import Cadastros from "./pages/financeiro/Cadastros";
 
 const queryClient = new QueryClient();
 
@@ -84,7 +85,8 @@ const App = () => (
                       <FinanceLayout />
                     </FinanceGuard>
                   }>
-                    <Route index element={<Navigate to="planejamento" replace />} />
+                    <Route index element={<Navigate to="cadastros" replace />} />
+                    <Route path="cadastros" element={<Cadastros />} />
                     <Route path="planejamento" element={<Planejamento />} />
                     <Route path="fluxo-caixa" element={<FluxoCaixa />} />
                     <Route path="analise-financeira" element={<AnaliseFinanceira />} />

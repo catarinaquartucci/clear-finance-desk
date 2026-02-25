@@ -56,6 +56,48 @@ export type Database = {
         }
         Relationships: []
       }
+      bank_accounts: {
+        Row: {
+          account_number: string | null
+          account_type: string
+          active: boolean
+          agency: string | null
+          bank_name: string
+          created_at: string
+          current_balance: number
+          id: string
+          initial_balance: number
+          name: string
+          updated_at: string
+        }
+        Insert: {
+          account_number?: string | null
+          account_type?: string
+          active?: boolean
+          agency?: string | null
+          bank_name: string
+          created_at?: string
+          current_balance?: number
+          id?: string
+          initial_balance?: number
+          name: string
+          updated_at?: string
+        }
+        Update: {
+          account_number?: string | null
+          account_type?: string
+          active?: boolean
+          agency?: string | null
+          bank_name?: string
+          created_at?: string
+          current_balance?: number
+          id?: string
+          initial_balance?: number
+          name?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       cash_flow_categories: {
         Row: {
           code: string
@@ -253,6 +295,50 @@ export type Database = {
         }
         Relationships: []
       }
+      chart_of_accounts: {
+        Row: {
+          active: boolean
+          code: string
+          created_at: string
+          id: string
+          level: number
+          name: string
+          parent_id: string | null
+          type: string
+          updated_at: string
+        }
+        Insert: {
+          active?: boolean
+          code: string
+          created_at?: string
+          id?: string
+          level?: number
+          name: string
+          parent_id?: string | null
+          type: string
+          updated_at?: string
+        }
+        Update: {
+          active?: boolean
+          code?: string
+          created_at?: string
+          id?: string
+          level?: number
+          name?: string
+          parent_id?: string | null
+          type?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "chart_of_accounts_parent_id_fkey"
+            columns: ["parent_id"]
+            isOneToOne: false
+            referencedRelation: "chart_of_accounts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       colaborador_documentos: {
         Row: {
           arquivo_url: string
@@ -404,6 +490,75 @@ export type Database = {
           updated_at?: string | null
           user_id?: string | null
           variavel?: string | null
+        }
+        Relationships: []
+      }
+      cost_centers: {
+        Row: {
+          active: boolean
+          code: string
+          created_at: string
+          description: string | null
+          id: string
+          name: string
+          updated_at: string
+        }
+        Insert: {
+          active?: boolean
+          code: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          name: string
+          updated_at?: string
+        }
+        Update: {
+          active?: boolean
+          code?: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          name?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      customers: {
+        Row: {
+          active: boolean
+          address: string | null
+          contact_email: string | null
+          contact_phone: string | null
+          created_at: string
+          document: string | null
+          id: string
+          name: string
+          segment: string | null
+          updated_at: string
+        }
+        Insert: {
+          active?: boolean
+          address?: string | null
+          contact_email?: string | null
+          contact_phone?: string | null
+          created_at?: string
+          document?: string | null
+          id?: string
+          name: string
+          segment?: string | null
+          updated_at?: string
+        }
+        Update: {
+          active?: boolean
+          address?: string | null
+          contact_email?: string | null
+          contact_phone?: string | null
+          created_at?: string
+          document?: string | null
+          id?: string
+          name?: string
+          segment?: string | null
+          updated_at?: string
         }
         Relationships: []
       }
@@ -1440,6 +1595,57 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      suppliers: {
+        Row: {
+          active: boolean
+          address: string | null
+          bank_account: string | null
+          bank_agency: string | null
+          bank_name: string | null
+          category: string | null
+          contact_email: string | null
+          contact_phone: string | null
+          created_at: string
+          document: string | null
+          id: string
+          name: string
+          pix_key: string | null
+          updated_at: string
+        }
+        Insert: {
+          active?: boolean
+          address?: string | null
+          bank_account?: string | null
+          bank_agency?: string | null
+          bank_name?: string | null
+          category?: string | null
+          contact_email?: string | null
+          contact_phone?: string | null
+          created_at?: string
+          document?: string | null
+          id?: string
+          name: string
+          pix_key?: string | null
+          updated_at?: string
+        }
+        Update: {
+          active?: boolean
+          address?: string | null
+          bank_account?: string | null
+          bank_agency?: string | null
+          bank_name?: string | null
+          category?: string | null
+          contact_email?: string | null
+          contact_phone?: string | null
+          created_at?: string
+          document?: string | null
+          id?: string
+          name?: string
+          pix_key?: string | null
+          updated_at?: string
+        }
+        Relationships: []
       }
       tax_rules: {
         Row: {
