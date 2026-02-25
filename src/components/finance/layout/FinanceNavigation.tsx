@@ -13,6 +13,7 @@ import {
   HandCoins,
   Scale,
   FileBarChart,
+  FileText,
 } from "lucide-react";
 
 const financeNavItems = [
@@ -28,6 +29,7 @@ const financeNavItems = [
   { icon: Award, label: "Bônus", path: "/financeiro/bonus" },
   { icon: PieChart, label: "Distribuição", path: "/financeiro/distribuicao" },
   { icon: FileBarChart, label: "Relatórios", path: "/financeiro/relatorios" },
+  { icon: FileText, label: "NFS-e", path: "/financeiro/emissao-nf" },
 ];
 
 export const FinanceNavigation = () => {

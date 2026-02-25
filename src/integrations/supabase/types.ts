@@ -968,6 +968,75 @@ export type Database = {
           },
         ]
       }
+      invoices: {
+        Row: {
+          amount: number
+          cancelled_at: string | null
+          created_at: string
+          customer_id: string | null
+          id: string
+          invoice_number: string | null
+          issued_at: string | null
+          net_amount: number
+          notes: string | null
+          pdf_url: string | null
+          receivable_id: string | null
+          service_description: string
+          status: string
+          tax_amount: number
+          updated_at: string
+        }
+        Insert: {
+          amount?: number
+          cancelled_at?: string | null
+          created_at?: string
+          customer_id?: string | null
+          id?: string
+          invoice_number?: string | null
+          issued_at?: string | null
+          net_amount?: number
+          notes?: string | null
+          pdf_url?: string | null
+          receivable_id?: string | null
+          service_description: string
+          status?: string
+          tax_amount?: number
+          updated_at?: string
+        }
+        Update: {
+          amount?: number
+          cancelled_at?: string | null
+          created_at?: string
+          customer_id?: string | null
+          id?: string
+          invoice_number?: string | null
+          issued_at?: string | null
+          net_amount?: number
+          notes?: string | null
+          pdf_url?: string | null
+          receivable_id?: string | null
+          service_description?: string
+          status?: string
+          tax_amount?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "invoices_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "invoices_receivable_id_fkey"
+            columns: ["receivable_id"]
+            isOneToOne: false
+            referencedRelation: "receivables"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       marvee_category_mapping: {
         Row: {
           cash_flow_category_code: string
