@@ -11,12 +11,14 @@ import {
   Database,
   Receipt,
   HandCoins,
+  Scale,
 } from "lucide-react";
 
 const financeNavItems = [
   { icon: Database, label: "Cadastros", path: "/financeiro/cadastros" },
   { icon: Receipt, label: "Contas a Pagar", path: "/financeiro/contas-pagar" },
   { icon: HandCoins, label: "Contas a Receber", path: "/financeiro/contas-receber" },
+  { icon: Scale, label: "Conciliação", path: "/financeiro/conciliacao" },
   { icon: Calculator, label: "Impostos", path: "/financeiro/impostos" },
   { icon: FileSpreadsheet, label: "Planejamento", path: "/financeiro/planejamento" },
   { icon: Wallet, label: "Fluxo de Caixa", path: "/financeiro/fluxo-caixa" },

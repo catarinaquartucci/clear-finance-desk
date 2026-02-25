@@ -98,6 +98,68 @@ export type Database = {
         }
         Relationships: []
       }
+      bank_transactions: {
+        Row: {
+          amount: number
+          balance: number | null
+          bank_account_id: string
+          conciliated: boolean
+          conciliated_at: string | null
+          conciliated_with_id: string | null
+          conciliated_with_type: string | null
+          created_at: string
+          date: string
+          description: string
+          id: string
+          import_hash: string | null
+          reference: string | null
+          type: string
+          updated_at: string
+        }
+        Insert: {
+          amount: number
+          balance?: number | null
+          bank_account_id: string
+          conciliated?: boolean
+          conciliated_at?: string | null
+          conciliated_with_id?: string | null
+          conciliated_with_type?: string | null
+          created_at?: string
+          date: string
+          description: string
+          id?: string
+          import_hash?: string | null
+          reference?: string | null
+          type?: string
+          updated_at?: string
+        }
+        Update: {
+          amount?: number
+          balance?: number | null
+          bank_account_id?: string
+          conciliated?: boolean
+          conciliated_at?: string | null
+          conciliated_with_id?: string | null
+          conciliated_with_type?: string | null
+          created_at?: string
+          date?: string
+          description?: string
+          id?: string
+          import_hash?: string | null
+          reference?: string | null
+          type?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bank_transactions_bank_account_id_fkey"
+            columns: ["bank_account_id"]
+            isOneToOne: false
+            referencedRelation: "bank_accounts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       cash_flow_categories: {
         Row: {
           code: string
