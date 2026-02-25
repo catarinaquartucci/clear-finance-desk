@@ -84,13 +84,6 @@ const Index = () => {
               link="/solicitacoes?tipo=reembolso"
             />
             <QuickActionCard
-              icon={TrendingUp}
-              title="Devolução ao Cliente"
-              description="Registre devoluções e reembolsos para clientes"
-              link="/solicitacoes?tipo=devolucao"
-              variant="success"
-            />
-            <QuickActionCard
               icon={FileText}
               title="Enviar Nota Fiscal"
               description="Prestadores e fornecedores: envie suas NFs"
