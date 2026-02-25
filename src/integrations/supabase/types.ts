@@ -160,6 +160,72 @@ export type Database = {
           },
         ]
       }
+      boletos: {
+        Row: {
+          amount: number
+          barcode: string | null
+          created_at: string
+          customer_id: string | null
+          due_date: string
+          id: string
+          notes: string | null
+          our_number: string | null
+          paid_at: string | null
+          pdf_url: string | null
+          receivable_id: string | null
+          sent_at: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          amount?: number
+          barcode?: string | null
+          created_at?: string
+          customer_id?: string | null
+          due_date: string
+          id?: string
+          notes?: string | null
+          our_number?: string | null
+          paid_at?: string | null
+          pdf_url?: string | null
+          receivable_id?: string | null
+          sent_at?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          amount?: number
+          barcode?: string | null
+          created_at?: string
+          customer_id?: string | null
+          due_date?: string
+          id?: string
+          notes?: string | null
+          our_number?: string | null
+          paid_at?: string | null
+          pdf_url?: string | null
+          receivable_id?: string | null
+          sent_at?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "boletos_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "boletos_receivable_id_fkey"
+            columns: ["receivable_id"]
+            isOneToOne: false
+            referencedRelation: "receivables"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       cash_flow_categories: {
         Row: {
           code: string

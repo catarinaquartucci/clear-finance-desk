@@ -14,6 +14,7 @@ import {
   Scale,
   FileBarChart,
   FileText,
+  Barcode,
 } from "lucide-react";
 
 const financeNavItems = [
@@ -30,6 +31,7 @@ const financeNavItems = [
   { icon: PieChart, label: "Distribuição", path: "/financeiro/distribuicao" },
   { icon: FileBarChart, label: "Relatórios", path: "/financeiro/relatorios" },
   { icon: FileText, label: "NFS-e", path: "/financeiro/emissao-nf" },
+  { icon: Barcode, label: "Boletos", path: "/financeiro/boletos" },
 ];
 
 export const FinanceNavigation = () => {
