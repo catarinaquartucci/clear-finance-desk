@@ -1,9 +1,10 @@
-import { LogOut, User, LogIn, Eye } from "lucide-react";
+import { LogOut, User, LogIn, Eye, Home } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import { Logo } from "@/components/Brand/Logo";
 import { NotificationsDropdown } from "./NotificationsDropdown";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
 export const Header = () => {
   const { user, isAdmin, hasFinanceViewOnly, hasAdminViewOnly, signOut } = useAuth();
@@ -20,9 +21,19 @@ export const Header = () => {
       <div className="container mx-auto px-4 py-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-4">
-            <Logo size="sm" />
-            <div className="h-6 w-px bg-border/50" />
-            <p className="text-sm text-muted-foreground tracking-wide">Central Financeira</p>
+            <Link to="/" className="flex items-center gap-4 hover:opacity-80 transition-opacity">
+              <Logo size="sm" />
+              <div className="h-6 w-px bg-border/50" />
+              <p className="text-sm text-muted-foreground tracking-wide">Central Financeira</p>
+            </Link>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => navigate("/")}>
+                  <Home className="w-4 h-4" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>Página Inicial</TooltipContent>
+            </Tooltip>
           </div>
           
           {user ? (
