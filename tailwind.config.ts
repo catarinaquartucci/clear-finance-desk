@@ -57,18 +57,17 @@ export default {
           foreground: "hsl(var(--card-foreground))",
         },
         brand: {
-          dark: "hsl(210 91% 9%)",
-          blue: "hsl(210 78% 51%)",
-          navy: "hsl(210 87% 31%)",
-          cyan: "hsl(180 87% 50%)",
+          dark: "hsl(210 40% 8%)",
+          teal: "hsl(185 80% 26%)",
+          "teal-light": "hsl(165 100% 35%)",
         },
         cyan: {
-          DEFAULT: "hsl(180 87% 50%)",
-          foreground: "hsl(210 91% 9%)",
+          DEFAULT: "hsl(185 80% 26%)",
+          foreground: "hsl(0 0% 100%)",
         },
         neonGreen: {
-          DEFAULT: "hsl(160 100% 50%)",
-          foreground: "hsl(210 91% 9%)",
+          DEFAULT: "hsl(160 100% 40%)",
+          foreground: "hsl(210 40% 8%)",
         },
         yellow: {
           DEFAULT: "hsl(45 100% 50%)",

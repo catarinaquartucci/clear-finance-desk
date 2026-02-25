@@ -2,9 +2,7 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Definition of the design system. All colors, gradients, fonts, etc should be defined here. 
-All colors MUST be HSL.
-*/
+/* Vantari Design System - All colors in HSL */
 
 @layer base {
   :root {
@@ -17,96 +15,95 @@ All colors MUST be HSL.
     --popover: 0 0% 100%;
     --popover-foreground: 220 13% 13%;
 
-    --primary: 187 100% 50%;
-    --primary-foreground: 215 35% 8%;
-    --primary-hover: 187 100% 45%;
+    --primary: 185 80% 26%;
+    --primary-foreground: 0 0% 100%;
+    --primary-hover: 185 80% 22%;
 
-    --secondary: 16 100% 60%;
+    --secondary: 165 100% 35%;
     --secondary-foreground: 0 0% 100%;
 
     --muted: 220 14% 96%;
     --muted-foreground: 220 9% 46%;
 
-    --accent: 330 100% 50%;
+    --accent: 175 60% 40%;
     --accent-foreground: 0 0% 100%;
 
-    --success: 160 100% 50%;
-    --success-foreground: 215 35% 8%;
+    --success: 160 100% 35%;
+    --success-foreground: 0 0% 100%;
     
-    --warning: 16 100% 60%;
-    --warning-foreground: 0 0% 100%;
+    --warning: 40 100% 50%;
+    --warning-foreground: 220 13% 13%;
 
     --destructive: 0 84% 60%;
     --destructive-foreground: 0 0% 100%;
 
     --border: 220 13% 91%;
     --input: 220 13% 91%;
-    --ring: 187 100% 50%;
+    --ring: 185 80% 26%;
 
     --radius: 0.75rem;
 
-    --gradient-primary: linear-gradient(135deg, hsl(187 100% 50%), hsl(187 100% 40%));
+    --gradient-primary: linear-gradient(135deg, hsl(185 80% 26%), hsl(165 100% 35%));
     --gradient-secondary: linear-gradient(180deg, hsl(220 17% 97%), hsl(220 14% 93%));
-    --gradient-chart: linear-gradient(180deg, hsla(187 100% 50% / 0.3), hsla(187 100% 50% / 0));
+    --gradient-chart: linear-gradient(180deg, hsla(185 80% 26% / 0.3), hsla(185 80% 26% / 0));
     --shadow-card: 0 1px 3px 0 hsl(220 13% 13% / 0.05), 0 1px 2px -1px hsl(220 13% 13% / 0.05);
     --shadow-card-hover: 0 10px 15px -3px hsl(220 13% 13% / 0.08), 0 4px 6px -4px hsl(220 13% 13% / 0.08);
   }
 
   .dark {
-    /* Background principal - #02162A */
-    --background: 210 91% 9%;
+    /* Background principal - dark navy */
+    --background: 210 40% 8%;
     --foreground: 210 20% 98%;
 
-    /* Cards - tom mais claro do background */
-    --card: 210 80% 12%;
+    /* Cards */
+    --card: 210 35% 11%;
     --card-foreground: 210 20% 98%;
 
-    /* Popover - similar ao card */
-    --popover: 210 80% 12%;
+    /* Popover */
+    --popover: 210 35% 11%;
     --popover-foreground: 210 20% 98%;
 
-    /* Primary - Ciano #15ECEC (para destaques/tags) */
-    --primary: 180 87% 50%;
-    --primary-foreground: 210 91% 9%;
-    --primary-hover: 180 87% 45%;
+    /* Primary - Teal Vantari */
+    --primary: 185 80% 26%;
+    --primary-foreground: 0 0% 100%;
+    --primary-hover: 185 80% 22%;
 
-    /* Secondary - Azul #2081E3 */
-    --secondary: 210 78% 51%;
+    /* Secondary - Verde-teal claro */
+    --secondary: 165 100% 35%;
     --secondary-foreground: 0 0% 100%;
 
-    /* Muted - variação do background */
-    --muted: 210 70% 14%;
-    --muted-foreground: 210 30% 60%;
+    /* Muted */
+    --muted: 210 30% 14%;
+    --muted-foreground: 210 20% 55%;
 
-    /* Accent - Azul Navy #0A4F95 */
-    --accent: 210 87% 31%;
+    /* Accent */
+    --accent: 175 60% 30%;
     --accent-foreground: 0 0% 100%;
 
-    --success: 160 100% 50%;
-    --success-foreground: 210 91% 9%;
+    --success: 160 100% 40%;
+    --success-foreground: 210 40% 8%;
     
     --warning: 45 100% 50%;
-    --warning-foreground: 210 91% 9%;
+    --warning-foreground: 210 40% 8%;
 
     --destructive: 0 84% 60%;
     --destructive-foreground: 0 0% 100%;
 
-    /* Border/Input - usando tons do azul escuro */
-    --border: 210 60% 18%;
-    --input: 210 60% 18%;
-    --ring: 180 87% 50%;
+    /* Border/Input */
+    --border: 210 30% 18%;
+    --input: 210 30% 18%;
+    --ring: 185 80% 26%;
 
     /* Brand colors */
-    --brand-dark: 210 91% 9%;
-    --brand-blue: 210 78% 51%;
-    --brand-navy: 210 87% 31%;
-    --brand-cyan: 180 87% 50%;
+    --brand-dark: 210 40% 8%;
+    --brand-teal: 185 80% 26%;
+    --brand-teal-light: 165 100% 35%;
 
     /* Gradients */
-    --gradient-primary: linear-gradient(135deg, hsl(180 87% 50%), hsl(180 87% 40%));
-    --gradient-secondary: linear-gradient(180deg, hsl(210 91% 9%), hsl(210 80% 12%));
-    --gradient-brand: linear-gradient(135deg, hsl(210 91% 9%), hsl(210 80% 15%));
-    --gradient-chart: linear-gradient(180deg, hsla(180 87% 50% / 0.3), hsla(180 87% 50% / 0));
+    --gradient-primary: linear-gradient(135deg, hsl(185 80% 26%), hsl(165 100% 35%));
+    --gradient-secondary: linear-gradient(180deg, hsl(210 40% 8%), hsl(210 35% 11%));
+    --gradient-brand: linear-gradient(135deg, hsl(210 40% 8%), hsl(210 35% 14%));
+    --gradient-chart: linear-gradient(180deg, hsla(185 80% 26% / 0.3), hsla(185 80% 26% / 0));
     --shadow-card: 0 4px 6px -1px rgba(0, 0, 0, 0.4), 0 2px 4px -1px rgba(0, 0, 0, 0.3);
     --shadow-card-hover: 0 10px 15px -3px rgba(0, 0, 0, 0.5), 0 4px 6px -4px rgba(0, 0, 0, 0.4);
   }
@@ -161,20 +158,16 @@ All colors MUST be HSL.
   }
 
   /* Brand color utilities */
-  .text-brand-cyan {
-    color: hsl(180 87% 50%);
+  .text-brand-teal {
+    color: hsl(185 80% 26%);
   }
 
-  .text-brand-blue {
-    color: hsl(210 78% 51%);
-  }
-
-  .text-brand-navy {
-    color: hsl(210 87% 31%);
+  .text-brand-teal-light {
+    color: hsl(165 100% 35%);
   }
 
   .text-neon-green {
-    color: hsl(160 100% 50%);
+    color: hsl(160 100% 40%);
   }
 
   .bg-card-dark {
@@ -189,10 +182,10 @@ All colors MUST be HSL.
     background: var(--gradient-primary);
   }
 
-  /* Tag highlight with cyan at 20% opacity (as per brandbook) */
+  /* Tag highlight with teal at 20% opacity */
   .tag-highlight {
-    background: hsla(180, 87%, 50%, 0.2);
-    border: 1px solid hsla(180, 87%, 50%, 0.3);
+    background: hsla(185, 80%, 26%, 0.2);
+    border: 1px solid hsla(185, 80%, 26%, 0.3);
   }
 
   /* Brand typography */
@@ -214,6 +207,6 @@ All colors MUST be HSL.
 
   /* Brand glow effect */
   .brand-glow {
-    box-shadow: 0 0 40px hsla(187, 100%, 50%, 0.15);
+    box-shadow: 0 0 40px hsla(185, 80%, 26%, 0.15);
   }
 }
