@@ -1327,6 +1327,124 @@ export type Database = {
         }
         Relationships: []
       }
+      payable_attachments: {
+        Row: {
+          created_at: string
+          description: string | null
+          file_url: string
+          id: string
+          payable_id: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          file_url: string
+          id?: string
+          payable_id: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          file_url?: string
+          id?: string
+          payable_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "payable_attachments_payable_id_fkey"
+            columns: ["payable_id"]
+            isOneToOne: false
+            referencedRelation: "payables"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      payables: {
+        Row: {
+          amount: number
+          bank_account_id: string | null
+          chart_account_id: string | null
+          cost_center_id: string | null
+          created_at: string
+          description: string
+          due_date: string
+          id: string
+          installment_number: number | null
+          installment_total: number | null
+          notes: string | null
+          paid_date: string | null
+          payment_method: string | null
+          status: string
+          supplier_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          amount: number
+          bank_account_id?: string | null
+          chart_account_id?: string | null
+          cost_center_id?: string | null
+          created_at?: string
+          description: string
+          due_date: string
+          id?: string
+          installment_number?: number | null
+          installment_total?: number | null
+          notes?: string | null
+          paid_date?: string | null
+          payment_method?: string | null
+          status?: string
+          supplier_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          amount?: number
+          bank_account_id?: string | null
+          chart_account_id?: string | null
+          cost_center_id?: string | null
+          created_at?: string
+          description?: string
+          due_date?: string
+          id?: string
+          installment_number?: number | null
+          installment_total?: number | null
+          notes?: string | null
+          paid_date?: string | null
+          payment_method?: string | null
+          status?: string
+          supplier_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "payables_bank_account_id_fkey"
+            columns: ["bank_account_id"]
+            isOneToOne: false
+            referencedRelation: "bank_accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payables_chart_account_id_fkey"
+            columns: ["chart_account_id"]
+            isOneToOne: false
+            referencedRelation: "chart_of_accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payables_cost_center_id_fkey"
+            columns: ["cost_center_id"]
+            isOneToOne: false
+            referencedRelation: "cost_centers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payables_supplier_id_fkey"
+            columns: ["supplier_id"]
+            isOneToOne: false
+            referencedRelation: "suppliers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           chave_pix: string | null

@@ -9,10 +9,12 @@ import {
   PieChart,
   Wallet,
   Database,
+  Receipt,
 } from "lucide-react";
 
 const financeNavItems = [
   { icon: Database, label: "Cadastros", path: "/financeiro/cadastros" },
+  { icon: Receipt, label: "Contas a Pagar", path: "/financeiro/contas-pagar" },
   { icon: Calculator, label: "Impostos", path: "/financeiro/impostos" },
   { icon: FileSpreadsheet, label: "Planejamento", path: "/financeiro/planejamento" },
   { icon: Wallet, label: "Fluxo de Caixa", path: "/financeiro/fluxo-caixa" },
