@@ -1,89 +1,43 @@
 
+# Rebranding: Viver de IA -> Vantari
 
-## Plano: Corrigir Auto-Save no NotaFiscalForm
+## Resumo
+Substituir toda a identidade visual "Viver de IA" pela marca Vantari, usando o logo enviado e adaptando as cores do sistema para combinar com a paleta teal/verde-azulado do logo.
 
-### Problema Identificado
+## Cores extraidas do logo Vantari
+- Teal escuro: ~`hsl(185, 80%, 26%)` (#0D7377)
+- Teal/verde claro: ~`hsl(165, 100%, 35%)` (#00B4A0)
+- Gradiente: do azul-teal ao verde-teal
 
-O formulário `NotaFiscalForm` possui integração com o hook `useDrafts` para carregar rascunhos salvos, mas **não implementa o mecanismo de auto-save automático ao desmontar** (quando o usuário troca de tela ou aba). Isso causa perda de dados preenchidos.
+## Mudancas
 
-Os formulários `ReembolsoForm`, `DevolucaoForm` e `MaterialForm` já possuem essa implementação funcionando corretamente.
+### 1. Logo
+- Copiar `Logo-Vantari-horizontal.png` para `src/assets/vantari-logo.png`
+- Atualizar `src/components/Brand/Logo.tsx` para usar o novo logo
 
-### Arquivo a Modificar
+### 2. Cores (src/index.css)
+- **Primary** (dark): de `180 87% 50%` (ciano) para `185 80% 26%` (teal Vantari)
+- **Ring/focus**: ajustar para teal
+- **Brand colors**: substituir cyan/blue por tons teal do Vantari
+- **Gradients**: adaptar gradient-primary para gradiente teal->verde do logo
+- **Light mode**: ajustar primary igualmente
 
-`src/components/Forms/NotaFiscalForm.tsx`
+### 3. Textos e referencias
+- `Header.tsx`: trocar "Central Financeira" ou manter como subtitulo
+- `Auth.tsx`: remover placeholder `@viverdeia.ai`, atualizar textos
+- `Auth.tsx`: remover restricao de dominio `viverdeia.ai` / `g4educacao.com`
+- `Index.tsx`: atualizar titulos do hero section
 
-### Alterações Necessárias
+### 4. Tailwind config
+- Atualizar cores `brand-*` e `cyan` para tons teal Vantari
 
-Adicionar o mesmo padrão de auto-save usado nos outros formulários, logo após o useEffect que carrega o rascunho (linha 76):
+### 5. Theme storage key
+- `src/components/theme-provider.tsx`: trocar `viver-de-ia-theme` para `vantari-theme`
 
-```typescript
-import { useState, useEffect, useRef } from "react"; // Adicionar useRef
+### 6. Titulo da pagina
+- `index.html`: atualizar `<title>` para "Vantari"
 
-// ... dentro do componente, após linha 76:
-
-// Ref para acessar valores atualizados no cleanup
-const formValuesRef = useRef<FormValues>();
-const userRef = useRef(user);
-
-// Manter refs atualizadas
-useEffect(() => {
-  formValuesRef.current = form.getValues();
-  userRef.current = user;
-});
-
-// Observar mudanças no form para atualizar ref
-useEffect(() => {
-  const subscription = form.watch((values) => {
-    formValuesRef.current = values as FormValues;
-  });
-  return () => subscription.unsubscribe();
-}, [form]);
-
-// Auto-save ao desmontar (trocar de aba/tela)
-useEffect(() => {
-  return () => {
-    const values = formValuesRef.current;
-    const currentUser = userRef.current;
-    
-    if (!values || !currentUser) return;
-    
-    const hasContent = Object.values(values).some(v => 
-      v !== "" && v !== undefined && v !== null
-    );
-    
-    if (hasContent) {
-      // Salvar silenciosamente (sem toast)
-      supabase
-        .from("drafts")
-        .upsert({
-          user_id: currentUser.id,
-          type: 'nota_fiscal',
-          data: values,
-          updated_at: new Date().toISOString(),
-        }, { onConflict: 'user_id,type' })
-        .then(() => {
-          console.log('Rascunho nota_fiscal auto-salvo');
-        });
-    }
-  };
-}, []);
-```
-
-### Resumo Técnico
-
-| Componente | Modificação |
-|------------|-------------|
-| **Import** | Adicionar `useRef` ao import existente de `useState, useEffect` |
-| **Refs** | Criar `formValuesRef` e `userRef` para manter valores atualizados |
-| **Watcher** | Observar mudanças no formulário e atualizar a ref |
-| **Cleanup** | Implementar useEffect com função de retorno que salva no banco ao desmontar |
-
-### Resultado Esperado
-
-Quando o usuário estiver preenchendo o formulário de Nota Fiscal e:
-1. Trocar de página
-2. Navegar para outra seção do sistema
-3. Fechar a aba
-
-O sistema automaticamente salvará os dados preenchidos como rascunho no banco de dados. Ao retornar, os dados serão restaurados automaticamente.
-
+## Detalhes tecnicos
+- Arquivos modificados: ~8 arquivos
+- Sem mudancas no banco de dados
+- Sem novas dependencias
