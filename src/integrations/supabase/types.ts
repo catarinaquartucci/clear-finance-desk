@@ -1475,6 +1475,92 @@ export type Database = {
         }
         Relationships: []
       }
+      receivables: {
+        Row: {
+          amount: number
+          bank_account_id: string | null
+          chart_account_id: string | null
+          cost_center_id: string | null
+          created_at: string
+          customer_id: string | null
+          description: string
+          due_date: string
+          id: string
+          installment_number: number | null
+          installment_total: number | null
+          notes: string | null
+          payment_method: string | null
+          received_date: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          amount: number
+          bank_account_id?: string | null
+          chart_account_id?: string | null
+          cost_center_id?: string | null
+          created_at?: string
+          customer_id?: string | null
+          description: string
+          due_date: string
+          id?: string
+          installment_number?: number | null
+          installment_total?: number | null
+          notes?: string | null
+          payment_method?: string | null
+          received_date?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          amount?: number
+          bank_account_id?: string | null
+          chart_account_id?: string | null
+          cost_center_id?: string | null
+          created_at?: string
+          customer_id?: string | null
+          description?: string
+          due_date?: string
+          id?: string
+          installment_number?: number | null
+          installment_total?: number | null
+          notes?: string | null
+          payment_method?: string | null
+          received_date?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "receivables_bank_account_id_fkey"
+            columns: ["bank_account_id"]
+            isOneToOne: false
+            referencedRelation: "bank_accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "receivables_chart_account_id_fkey"
+            columns: ["chart_account_id"]
+            isOneToOne: false
+            referencedRelation: "chart_of_accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "receivables_cost_center_id_fkey"
+            columns: ["cost_center_id"]
+            isOneToOne: false
+            referencedRelation: "cost_centers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "receivables_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       reembolso_anexos: {
         Row: {
           arquivo_url: string
