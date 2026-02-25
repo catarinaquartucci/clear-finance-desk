@@ -39,6 +39,7 @@ import ContasPagar from "./pages/financeiro/ContasPagar";
 import ContasReceber from "./pages/financeiro/ContasReceber";
 import Conciliacao from "./pages/financeiro/Conciliacao";
 import Relatorios from "./pages/financeiro/Relatorios";
+import EmissaoNF from "./pages/financeiro/EmissaoNF";
 const queryClient = new QueryClient();
 
 const App = () => (
@@ -101,6 +102,7 @@ const App = () => (
                     <Route path="bonus" element={<Bonus />} />
                     <Route path="distribuicao" element={<Distribuicao />} />
                     <Route path="relatorios" element={<Relatorios />} />
+                    <Route path="emissao-nf" element={<EmissaoNF />} />
                   </Route>
                   
                   <Route path="*" element={<NotFound />} />
