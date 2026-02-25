@@ -12,6 +12,7 @@ import {
   Receipt,
   HandCoins,
   Scale,
+  FileBarChart,
 } from "lucide-react";
 
 const financeNavItems = [
@@ -26,6 +27,7 @@ const financeNavItems = [
   { icon: Target, label: "Metas de Vendas", path: "/financeiro/metas-vendas" },
   { icon: Award, label: "Bônus", path: "/financeiro/bonus" },
   { icon: PieChart, label: "Distribuição", path: "/financeiro/distribuicao" },
+  { icon: FileBarChart, label: "Relatórios", path: "/financeiro/relatorios" },
 ];
 
 export const FinanceNavigation = () => {
