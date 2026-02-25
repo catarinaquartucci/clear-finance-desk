@@ -150,15 +150,7 @@ const Auth = () => {
 
         toast.success("Login realizado com sucesso!");
       } else {
-        // Signup normal - Validar domínio do email
-        const emailDomain = email.split('@')[1]?.toLowerCase();
-        const dominiosPermitidos = ['viverdeia.ai', 'g4educacao.com'];
-        
-        if (!dominiosPermitidos.includes(emailDomain)) {
-          toast.error("Apenas emails @viverdeia.ai ou @g4educacao.com podem se cadastrar");
-          setLoading(false);
-          return;
-        }
+        // Signup normal - validar colaborador
 
         // Validar se colaborador existe e está ativo
         const { data: validacao, error: validacaoError } = await supabase.rpc('validar_colaborador_signup', {
@@ -351,7 +343,7 @@ const Auth = () => {
               <Input
                 id="email"
                 type="email"
-                placeholder={isFirstAccess ? "seu@email.com" : "seu@viverdeia.ai"}
+                placeholder="seu@email.com"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required

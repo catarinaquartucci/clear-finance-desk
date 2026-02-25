@@ -29,7 +29,7 @@ const Index = () => {
           <div className="max-w-3xl">
             <h2 className="text-4xl font-bold mb-3">Central Financeira</h2>
             <p className="text-white/90 text-lg">
-              Gestão à Vista - Controle total das suas finanças
+              Vantari — Gestão à Vista
             </p>
           </div>
         </section>
