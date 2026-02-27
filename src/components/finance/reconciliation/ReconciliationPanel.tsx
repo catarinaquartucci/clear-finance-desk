@@ -20,10 +20,12 @@ import { ConciliateDialog } from "./ConciliateDialog";
 import { AutoConciliationDialog } from "./AutoConciliationDialog";
 import { useAuth } from "@/contexts/AuthContext";
 import { findMatches, type MatchCandidate } from "@/lib/autoConciliation";
+import { CompanyFilter } from "@/components/finance/CompanyFilter";
 
 export const ReconciliationPanel = () => {
   const { hasFinanceViewOnly } = useAuth();
-  const { data: bankAccounts } = useBankAccounts();
+  const [companyFilter, setCompanyFilter] = useState("all");
+  const { data: bankAccounts } = useBankAccounts(companyFilter);
   const [selectedAccount, setSelectedAccount] = useState<string>("");
   const [selectedMonth, setSelectedMonth] = useState(() => {
     const d = new Date();
@@ -90,6 +92,7 @@ export const ReconciliationPanel = () => {
       {/* Account & Month selector */}
       <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center justify-between">
         <div className="flex gap-2 flex-wrap">
+          <CompanyFilter value={companyFilter} onChange={setCompanyFilter} />
           <Select value={selectedAccount} onValueChange={setSelectedAccount}>
             <SelectTrigger className="w-56"><SelectValue placeholder="Selecione a conta" /></SelectTrigger>
             <SelectContent>

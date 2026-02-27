@@ -15,22 +15,24 @@ export interface Supplier {
   pix_key: string | null;
   category: string | null;
   active: boolean;
+  company_id: string | null;
   created_at: string;
   updated_at: string;
 }
 
 export type SupplierInsert = Omit<Supplier, "id" | "created_at" | "updated_at">;
 
-export const useSuppliers = () => {
+export const useSuppliers = (companyId?: string) => {
   const queryClient = useQueryClient();
 
   const query = useQuery({
-    queryKey: ["suppliers"],
+    queryKey: ["suppliers", companyId],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from("suppliers")
-        .select("*")
-        .order("name");
+      let q = supabase.from("suppliers").select("*").order("name");
+      if (companyId && companyId !== "all") {
+        q = q.eq("company_id", companyId);
+      }
+      const { data, error } = await q;
       if (error) throw error;
       return data as Supplier[];
     },
@@ -40,7 +42,7 @@ export const useSuppliers = () => {
     mutationFn: async (supplier: SupplierInsert) => {
       const { data, error } = await supabase
         .from("suppliers")
-        .insert(supplier)
+        .insert(supplier as any)
         .select()
         .single();
       if (error) throw error;
@@ -55,7 +57,7 @@ export const useSuppliers = () => {
 
   const update = useMutation({
     mutationFn: async ({ id, ...data }: Partial<Supplier> & { id: string }) => {
-      const { error } = await supabase.from("suppliers").update(data).eq("id", id);
+      const { error } = await supabase.from("suppliers").update(data as any).eq("id", id);
       if (error) throw error;
     },
     onSuccess: () => {

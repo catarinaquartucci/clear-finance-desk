@@ -12,22 +12,24 @@ export interface BankAccount {
   initial_balance: number;
   current_balance: number;
   active: boolean;
+  company_id: string | null;
   created_at: string;
   updated_at: string;
 }
 
 export type BankAccountInsert = Omit<BankAccount, "id" | "created_at" | "updated_at">;
 
-export const useBankAccounts = () => {
+export const useBankAccounts = (companyId?: string) => {
   const queryClient = useQueryClient();
 
   const query = useQuery({
-    queryKey: ["bank_accounts"],
+    queryKey: ["bank_accounts", companyId],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from("bank_accounts")
-        .select("*")
-        .order("name");
+      let q = supabase.from("bank_accounts").select("*").order("name");
+      if (companyId && companyId !== "all") {
+        q = q.eq("company_id", companyId);
+      }
+      const { data, error } = await q;
       if (error) throw error;
       return data as BankAccount[];
     },
@@ -37,7 +39,7 @@ export const useBankAccounts = () => {
     mutationFn: async (account: BankAccountInsert) => {
       const { data, error } = await supabase
         .from("bank_accounts")
-        .insert(account)
+        .insert(account as any)
         .select()
         .single();
       if (error) throw error;
@@ -52,7 +54,7 @@ export const useBankAccounts = () => {
 
   const update = useMutation({
     mutationFn: async ({ id, ...data }: Partial<BankAccount> & { id: string }) => {
-      const { error } = await supabase.from("bank_accounts").update(data).eq("id", id);
+      const { error } = await supabase.from("bank_accounts").update(data as any).eq("id", id);
       if (error) throw error;
     },
     onSuccess: () => {

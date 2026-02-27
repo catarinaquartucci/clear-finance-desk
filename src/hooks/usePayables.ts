@@ -39,11 +39,11 @@ export interface PayableInsert {
   notes?: string | null;
 }
 
-export const usePayables = (statusFilter?: string) => {
+export const usePayables = (statusFilter?: string, companyId?: string) => {
   const queryClient = useQueryClient();
 
   const { data: payables, isLoading } = useQuery({
-    queryKey: ["payables", statusFilter],
+    queryKey: ["payables", statusFilter, companyId],
     queryFn: async () => {
       let query = supabase
         .from("payables")
@@ -56,6 +56,9 @@ export const usePayables = (statusFilter?: string) => {
 
       if (statusFilter && statusFilter !== "all") {
         query = query.eq("status", statusFilter);
+      }
+      if (companyId && companyId !== "all") {
+        query = query.eq("company_id", companyId);
       }
 
       const { data, error } = await query;
