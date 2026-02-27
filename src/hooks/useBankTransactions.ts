@@ -97,7 +97,31 @@ export const useBankTransactions = (bankAccountId?: string, month?: string) => {
       skipped = rows.length - inserted;
       return { inserted, skipped };
     },
-    onSuccess: ({ inserted, skipped }) => {
+    onSuccess: async ({ inserted, skipped }) => {
+      // Update bank account current_balance from latest transaction
+      if (bankAccountId && inserted > 0) {
+        try {
+          const { data: latestTx } = await supabase
+            .from("bank_transactions")
+            .select("balance, date")
+            .eq("bank_account_id", bankAccountId)
+            .not("balance", "is", null)
+            .order("date", { ascending: false })
+            .order("created_at", { ascending: false })
+            .limit(1)
+            .single();
+
+          if (latestTx?.balance != null) {
+            await supabase
+              .from("bank_accounts")
+              .update({ current_balance: latestTx.balance })
+              .eq("id", bankAccountId);
+            queryClient.invalidateQueries({ queryKey: ["bank-accounts"] });
+          }
+        } catch (e) {
+          console.error("Error updating bank account balance:", e);
+        }
+      }
       queryClient.invalidateQueries({ queryKey: ["bank-transactions"] });
       toast.success(`${inserted} lançamento(s) importado(s)${skipped > 0 ? `, ${skipped} duplicado(s) ignorado(s)` : ""}`);
     },

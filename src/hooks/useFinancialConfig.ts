@@ -108,6 +108,56 @@ export function useFinancialConfig() {
     },
   });
 
+  // Query to get total bank balance
+  const { data: bankTotal, refetch: refetchBankTotal } = useQuery({
+    queryKey: ["bank-accounts-total"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("bank_accounts")
+        .select("current_balance")
+        .eq("active", true);
+
+      if (error) {
+        console.error("Error fetching bank accounts total:", error);
+        return 0;
+      }
+
+      return data?.reduce((sum, acc) => sum + (Number(acc.current_balance) || 0), 0) ?? 0;
+    },
+  });
+
+  const syncFromBankAccountsMutation = useMutation({
+    mutationFn: async () => {
+      const { data, error } = await supabase
+        .from("bank_accounts")
+        .select("current_balance")
+        .eq("active", true);
+
+      if (error) throw error;
+
+      const total = data?.reduce((sum, acc) => sum + (Number(acc.current_balance) || 0), 0) ?? 0;
+
+      const { error: upsertError } = await supabase
+        .from("financial_config")
+        .upsert(
+          { key: "saldo_livre", value: total },
+          { onConflict: "key" }
+        );
+
+      if (upsertError) throw upsertError;
+      return total;
+    },
+    onSuccess: (total) => {
+      queryClient.invalidateQueries({ queryKey: ["financial-config"] });
+      queryClient.invalidateQueries({ queryKey: ["bank-accounts-total"] });
+      toast.success(`Saldo livre sincronizado: R$ ${total.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`);
+    },
+    onError: (error) => {
+      console.error("Error syncing from bank accounts:", error);
+      toast.error("Erro ao sincronizar saldo bancário");
+    },
+  });
+
   return {
     hublaFeePercentage: config?.hublaFeePercentage ?? DEFAULT_HUBLA_FEE_PERCENTAGE,
     saldoLivre: config?.saldoLivre ?? 0,
@@ -119,5 +169,8 @@ export function useFinancialConfig() {
     isUpdating: updateHublaFeeMutation.isPending,
     isUpdatingSaldoLivre: updateSaldoLivreMutation.isPending,
     isUpdatingSaldoRetido: updateSaldoRetidoMutation.isPending,
+    bankTotal: bankTotal ?? 0,
+    syncFromBankAccounts: syncFromBankAccountsMutation.mutate,
+    isSyncingFromBank: syncFromBankAccountsMutation.isPending,
   };
 }
