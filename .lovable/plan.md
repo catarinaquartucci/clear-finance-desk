@@ -1,77 +1,140 @@
+# Mascara CNPJ + Filtro por Filial em Todo o Financeiro
+
+## Resumo
+
+Tres frentes de trabalho:
+
+1. Mascara automatica de CNPJ em formularios
+2. Remover sincronizacao Marvee do Fluxo de Caixa e adicionar filtro por filial
+3. Remover sincronização Marvee em todo o sistema
+4. Adicionar campo `company_id` e filtro por filial em todos os modulos financeiros
+
+---
+
+## 1. Mascara CNPJ
+
+Criar um utilitario `formatCNPJ(value)` que aplica a mascara `00.000.000/0000-00` conforme o usuario digita. Sera usado em:
+
+- **EmpresasGrupo** (campo CNPJ do cadastro de empresas)
+- **SuppliersList** (campo CNPJ/CPF do fornecedor)
+- **CustomersList** (campo CNPJ/CPF do cliente)
+
+Arquivo novo: `src/lib/masks.ts` com funcoes `formatCNPJ` e `formatCPFCNPJ` (detecta automaticamente pelo tamanho).
+
+---
+
+## 2. Fluxo de Caixa - Remover Marvee + Filtro por Filial
+
+**Arquivo**: `src/pages/financeiro/FluxoCaixa.tsx`
+
+- Remover o componente `MarveeSyncButton` e `MarveeMappingDialog` do header
+- Adicionar um `Select` de filial no area de filtros, usando dados de `useGroupCompanies`
+- Passar o `companyId` selecionado para os hooks de dados
+
+---
+
+## 3. Campo `company_id` em Tabelas Financeiras (Migration)
+
+Adicionar coluna `company_id UUID REFERENCES group_companies(id)` (nullable, para compatibilidade com dados existentes) nas seguintes tabelas:
+
+- `suppliers`
+- `customers`
+- `cost_centers`
+- `bank_accounts`
+- `payables`
+- `receivables`
+
+Isso permite filtrar qualquer registro por empresa/filial.
+
+---
+
+## 4. Filtro por Filial nos Modulos
+
+Para cada modulo, adicionar:
+
+- **Select de filial** na barra de filtros (toolbar) - usando `useGroupCompanies`
+- **Campo filial** nos formularios de cadastro/criacao
+- **Coluna filial** na tabela de listagem
+
+### Arquivos afetados (UI):
 
 
-# Modulo de Configuracoes do Sistema
+| Modulo           | Lista                     | Formulario           |
+| ---------------- | ------------------------- | -------------------- |
+| Fornecedores     | `SuppliersList.tsx`       | inline no dialog     |
+| Clientes         | `CustomersList.tsx`       | inline no dialog     |
+| Centros de Custo | `CostCentersList.tsx`     | inline no dialog     |
+| Contas Bancarias | `BankAccountsList.tsx`    | inline no dialog     |
+| Contas a Pagar   | `PayablesList.tsx`        | `PayableForm.tsx`    |
+| Contas a Receber | `ReceivablesList.tsx`     | `ReceivableForm.tsx` |
+| Conciliacao      | `ReconciliationPanel.tsx` | -                    |
 
-## Objetivo
 
-Criar uma nova area "Configuracoes" acessivel apenas por administradores, centralizada como um novo modulo (similar ao Admin e Financeiro), com abas para gerenciar diferentes aspectos do sistema.
+### Arquivos afetados (Hooks):
 
-## Estrutura
+Cada hook recebera um parametro opcional `companyId` e aplicara `.eq("company_id", companyId)` quando definido:
 
-O modulo tera uma pagina principal com abas (tabs), acessivel via navegacao principal:
+- `useSuppliers.ts`
+- `useCustomers.ts`
+- `useCostCenters.ts`
+- `useBankAccounts.ts`
+- `usePayables.ts`
+- `useReceivables.ts`
+- `useBankTransactions.ts`
 
-### Abas planejadas
-
-1. **Regras e Metricas** - Editor para as instrucoes/politicas financeiras (atualmente hardcoded em `Regras.tsx`). Permite editar textos das regras diretamente pelo sistema, salvando no banco de dados (`system_settings` table).
-
-2. **Usuarios do Sistema** - Listar todos os usuarios registrados (da tabela `colaboradores` com `user_id` vinculado), permitindo gerenciar roles (admin, finance, finance_viewer, admin_viewer) sem precisar editar cada colaborador individualmente.
-
-3. **Empresas do Grupo** - Cadastro de empresas do grupo economico (nova tabela `group_companies`) com campos: nome, CNPJ, razao social, tipo (matriz/filial), ativa.
-
-4. **Metas Gerais** - Configuracao de metas e KPIs do sistema (diferentes das metas de vendas financeiras), como metas operacionais, indicadores de desempenho, etc.
-
-5. **Preferencias** - Configuracoes gerais como nome da empresa, logo, timezone, moeda padrao.
+---
 
 ## Detalhes Tecnicos
 
-### Banco de dados (migrations)
+### Migration SQL
 
-**Tabela `system_settings`** - Para armazenar configuracoes dinamicas (regras, textos, preferencias):
-```text
-id (uuid, PK)
-key (text, UNIQUE)
-value (jsonb)
-category (text) -- 'rules', 'preferences', 'metrics'
-updated_at (timestamptz)
-updated_by (uuid)
+```sql
+ALTER TABLE suppliers ADD COLUMN company_id UUID REFERENCES group_companies(id);
+ALTER TABLE customers ADD COLUMN company_id UUID REFERENCES group_companies(id);
+ALTER TABLE cost_centers ADD COLUMN company_id UUID REFERENCES group_companies(id);
+ALTER TABLE bank_accounts ADD COLUMN company_id UUID REFERENCES group_companies(id);
+ALTER TABLE payables ADD COLUMN company_id UUID REFERENCES group_companies(id);
+ALTER TABLE receivables ADD COLUMN company_id UUID REFERENCES group_companies(id);
 ```
 
-**Tabela `group_companies`** - Para empresas do grupo:
-```text
-id (uuid, PK)
-name (text)
-legal_name (text)
-document (text) -- CNPJ
-type (text) -- 'matriz', 'filial'
-active (boolean, default true)
-created_at, updated_at (timestamptz)
+### Mascara CNPJ (src/lib/masks.ts)
+
+```typescript
+export function formatCNPJ(value: string): string {
+  const digits = value.replace(/\D/g, "").slice(0, 14);
+  return digits
+    .replace(/^(\d{2})(\d)/, "$1.$2")
+    .replace(/^(\d{2})\.(\d{3})(\d)/, "$1.$2.$3")
+    .replace(/\.(\d{3})(\d)/, ".$1/$2")
+    .replace(/(\d{4})(\d)/, "$1-$2");
+}
 ```
 
-RLS: Apenas admin pode inserir/atualizar/excluir. Admin + admin_viewer podem visualizar.
+### Filtro por filial (padrao reutilizavel)
 
-### Arquivos novos
+Criar componente `CompanyFilter` que encapsula o Select com dados de `useGroupCompanies`, reutilizavel em todas as telas:
 
-- `src/pages/admin/AdminConfiguracoes.tsx` - Pagina principal com Tabs
-- `src/components/admin/configuracoes/RegrasEditor.tsx` - Editor de regras/metricas
-- `src/components/admin/configuracoes/UsuariosSistema.tsx` - Gestao de usuarios e roles
-- `src/components/admin/configuracoes/EmpresasGrupo.tsx` - CRUD de empresas do grupo
-- `src/components/admin/configuracoes/MetasGerais.tsx` - Configuracao de metas
-- `src/components/admin/configuracoes/PreferenciasGerais.tsx` - Preferencias do sistema
-- `src/hooks/useSystemSettings.ts` - Hook para system_settings
-- `src/hooks/useGroupCompanies.ts` - Hook para group_companies
+```typescript
+// src/components/finance/CompanyFilter.tsx
+<Select value={companyId} onValueChange={setCompanyId}>
+  <SelectTrigger><SelectValue placeholder="Todas as filiais" /></SelectTrigger>
+  <SelectContent>
+    <SelectItem value="all">Todas</SelectItem>
+    {companies.map(c => (
+      <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
+    ))}
+  </SelectContent>
+</Select>
+```
 
-### Arquivos modificados
+### Sequencia de implementacao
 
-- `src/App.tsx` - Adicionar rota `/admin/configuracoes`
-- `src/components/admin/layout/AdminNavigation.tsx` - Adicionar item "Configuracoes" com icone `Settings`
-- `src/pages/Regras.tsx` - Carregar textos do banco (system_settings) ao inves de hardcoded, com fallback para os textos atuais
-
-### Fluxo de uso
-
-1. Admin acessa Admin > Configuracoes
-2. Na aba "Regras e Metricas", edita os textos das politicas financeiras que aparecem na pagina inicial
-3. Na aba "Usuarios", ve todos os usuarios do sistema e pode alterar suas permissoes rapidamente via toggles
-4. Na aba "Empresas do Grupo", cadastra as empresas (CNPJ, razao social, etc.)
-5. Na aba "Metas Gerais", define indicadores e metas operacionais
-6. Na aba "Preferencias", configura dados basicos da organizacao
-
+1. Migration para adicionar `company_id` nas tabelas
+2. Criar `src/lib/masks.ts` (formatCNPJ)
+3. Criar `src/components/finance/CompanyFilter.tsx`
+4. Atualizar EmpresasGrupo com mascara CNPJ
+5. Atualizar hooks (useSuppliers, useCustomers, etc.) para aceitar `companyId`
+6. Atualizar listas e formularios (Fornecedores, Clientes, Centros de Custo, Contas Bancarias)
+7. Atualizar PayableForm/PayablesList e ReceivableForm/ReceivablesList
+8. Atualizar ReconciliationPanel com filtro de filial
+9. Atualizar FluxoCaixa - remover Marvee, adicionar filtro filial
