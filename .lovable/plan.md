@@ -1,31 +1,60 @@
 
 
-# Corrigir Erro de Importacao de Extrato
+# Sincronizar Dados Bancarios com Saldo de Caixa
 
-## Problema
+## Contexto Atual
 
-A importacao falha com erro `"there is no unique or exclusion constraint matching the ON CONFLICT specification"` porque a coluna `import_hash` na tabela `bank_transactions` nao tem uma constraint UNIQUE aplicada corretamente no banco.
+- **Contas bancarias** (`bank_accounts`): tem campo `current_balance` mas nunca e atualizado apos importacao de extratos
+- **Transacoes bancarias** (`bank_transactions`): importadas via OFC/OFX, cada transacao tem campo `balance` (saldo apos a transacao) e `amount`
+- **Planejamento** (`monthly_planning`): tem `initial_balance` por mes, preenchido manualmente
+- **Saldo Livre / Retido** (`financial_config`): editados manualmente nos cards da pagina de Planejamento
 
-## Solucao
+Nao existe nenhuma conexao entre os dados reais importados do banco e os saldos exibidos no planejamento.
 
-Duas acoes paralelas:
+## Solucao Proposta
 
-### 1. Recriar a constraint UNIQUE no banco
-Criar nova migration SQL com:
-```sql
-CREATE UNIQUE INDEX IF NOT EXISTS bank_transactions_import_hash_unique 
-ON public.bank_transactions (import_hash) 
-WHERE import_hash IS NOT NULL;
-```
+### 1. Atualizar saldo da conta bancaria apos importacao
 
-### 2. Tornar o codigo mais resiliente (fallback)
-Alterar `useBankTransactions.ts` para que, caso o `upsert` falhe, use insert simples ignorando erros de duplicata individualmente. Isso garante que funcione mesmo sem a constraint.
+**Arquivo**: `src/hooks/useBankTransactions.ts`
 
-**Abordagem no codigo:**
-- Primeiro tenta `upsert` com `onConflict: "import_hash"`
-- Se falhar com erro `42P10` (no unique constraint), faz insert em lote sem `onConflict`, tratando erros de duplicata individualmente
+Apos importacao bem-sucedida de transacoes, calcular o saldo mais recente (ultimo `balance` ou somatorio de transacoes) e atualizar `bank_accounts.current_balance`.
 
-### Arquivo afetado
-- `src/hooks/useBankTransactions.ts` — mutation `importTransactions`
-- Nova migration SQL para a constraint
+### 2. Botao "Sincronizar com Banco" na pagina de Planejamento
+
+**Arquivos**: `src/pages/financeiro/Planejamento.tsx`, `src/hooks/useFinancialConfig.ts`
+
+Adicionar um botao que:
+- Busca todas as contas bancarias ativas e soma seus `current_balance`
+- Atualiza o "Saldo Livre" com esse valor (ou oferece opcao de qual campo atualizar)
+- Mostra toast de confirmacao
+
+### 3. Sincronizar Saldo Caixa mensal com dados bancarios
+
+**Arquivo**: `src/components/finance/planning/PlanningTable.tsx`
+
+Para meses passados, permitir preencher automaticamente o "Saldo Caixa" (initial_balance) com o saldo bancario real do ultimo dia do mes anterior, calculado a partir das transacoes importadas.
+
+## Detalhes Tecnicos
+
+### Hook `useBankTransactions.ts`
+- No `onSuccess` do `importTransactions`, adicionar chamada para atualizar `bank_accounts.current_balance`
+- Usar o `balance` da transacao mais recente (por data) ou calcular: `initial_balance + sum(credits) - sum(debits)`
+
+### Hook `useFinancialConfig.ts`
+- Adicionar funcao `syncFromBankAccounts()` que:
+  1. Faz `SELECT SUM(current_balance) FROM bank_accounts WHERE active = true`
+  2. Chama `updateSaldoLivre` com o resultado
+
+### Pagina `Planejamento.tsx`
+- Adicionar botao com icone `RefreshCw` ao lado dos cards de saldo
+- Ao clicar, executa `syncFromBankAccounts()`
+- Exibir o saldo bancario real como referencia abaixo do "Saldo Livre"
+
+### Sincronizacao mensal (PlanningTable)
+- Adicionar funcao que busca transacoes bancarias agrupadas por mes
+- Para cada mes com dados bancarios, calcula o saldo final do mes (ultimo `balance` da transacao mais recente)
+- Botao opcional "Preencher saldos reais" que popula `initial_balance` de cada mes
+
+### Nenhuma migracao de banco necessaria
+Todos os campos ja existem (`bank_accounts.current_balance`, `monthly_planning.initial_balance`, `financial_config.saldo_livre`). A solucao usa apenas logica de leitura e atualizacao dos dados existentes.
 
