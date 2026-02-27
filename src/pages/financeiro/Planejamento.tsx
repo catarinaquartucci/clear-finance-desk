@@ -14,7 +14,7 @@ import { useMonthlyPlanning } from "@/hooks/useMonthlyPlanning";
 import { useAIInsights } from "@/hooks/useAIInsights";
 import { useAppPreferences } from "@/contexts/AppPreferencesContext";
 import { useFinancialConfig } from "@/hooks/useFinancialConfig";
-import { TrendingUp, Sparkles } from "lucide-react";
+import { TrendingUp, Sparkles, RefreshCw } from "lucide-react";
 import { calculateTaxForMonth, getMonthType, MonthData } from "@/lib/taxCalculations";
 import { parseISO, subMonths, format } from "date-fns";
 
@@ -55,6 +55,9 @@ const Planejamento = () => {
     updateSaldoRetido,
     isUpdatingSaldoLivre,
     isUpdatingSaldoRetido,
+    bankTotal,
+    syncFromBankAccounts,
+    isSyncingFromBank,
   } = useFinancialConfig();
   const { insights, isLoading: isLoadingInsights, error, generateInsights, clearInsights } = useAIInsights();
 
@@ -252,14 +255,21 @@ const Planejamento = () => {
 
       {/* Cards de Saldo */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <BalanceCard
-          label="Saldo Livre"
-          value={saldoLivre}
-          colorClass="text-blue-500"
-          editable
-          onSave={updateSaldoLivre}
-          isLoading={isUpdatingSaldoLivre}
-        />
+        <div className="relative">
+          <BalanceCard
+            label="Saldo Livre"
+            value={saldoLivre}
+            colorClass="text-blue-500"
+            editable
+            onSave={updateSaldoLivre}
+            isLoading={isUpdatingSaldoLivre}
+          />
+          {bankTotal > 0 && bankTotal !== saldoLivre && (
+            <div className="text-[10px] text-muted-foreground mt-1 px-4 flex items-center gap-1">
+              Saldo bancário real: {formatCurrency(bankTotal)}
+            </div>
+          )}
+        </div>
         <BalanceCard
           label="Saldo Retido"
           value={saldoRetido}
@@ -268,12 +278,26 @@ const Planejamento = () => {
           onSave={updateSaldoRetido}
           isLoading={isUpdatingSaldoRetido}
         />
-        <BalanceCard
-          label="Saldo Total"
-          value={saldoLivre + saldoRetido}
-          colorClass="text-cyan-500"
-          editable={false}
-        />
+        <div>
+          <BalanceCard
+            label="Saldo Total"
+            value={saldoLivre + saldoRetido}
+            colorClass="text-cyan-500"
+            editable={false}
+          />
+          <div className="mt-2 px-4">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => syncFromBankAccounts()}
+              disabled={isSyncingFromBank}
+              className="w-full text-xs"
+            >
+              <RefreshCw className={`h-3 w-3 mr-1.5 ${isSyncingFromBank ? 'animate-spin' : ''}`} />
+              {isSyncingFromBank ? "Sincronizando..." : "Sincronizar com Banco"}
+            </Button>
+          </div>
+        </div>
       </div>
 
       {/* Tabela Principal */}
