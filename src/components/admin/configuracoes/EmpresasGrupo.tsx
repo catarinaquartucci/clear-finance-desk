@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { formatCNPJ } from "@/lib/masks";
 import { useGroupCompanies, GroupCompany } from "@/hooks/useGroupCompanies";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -75,7 +76,7 @@ export const EmpresasGrupo = () => {
               </div>
               <div>
                 <Label>CNPJ</Label>
-                <Input value={form.document} onChange={(e) => setForm({ ...form, document: e.target.value })} placeholder="00.000.000/0000-00" />
+                <Input value={form.document} onChange={(e) => setForm({ ...form, document: formatCNPJ(e.target.value) })} placeholder="00.000.000/0000-00" />
               </div>
               <div>
                 <Label>Tipo</Label>

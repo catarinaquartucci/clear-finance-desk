@@ -8,6 +8,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { useSuppliers } from "@/hooks/useSuppliers";
 import { useCostCenters } from "@/hooks/useCostCenters";
 import { useBankAccounts } from "@/hooks/useBankAccounts";
+import { CompanyFilter } from "@/components/finance/CompanyFilter";
 import type { PayableInsert } from "@/hooks/usePayables";
 
 interface PayableFormProps {
@@ -170,6 +171,16 @@ export const PayableForm = ({
                 <Input type="number" min="1" max="60" value={form.installment_total ?? 1} onChange={(e) => set("installment_total", Number(e.target.value))} />
               </div>
             )}
+          </div>
+
+          <div>
+            <Label>Filial</Label>
+            <CompanyFilter
+              value={(form as any).company_id ?? "none"}
+              onChange={(v) => set("company_id" as any, v === "none" ? null : v)}
+              formMode
+              className="w-full"
+            />
           </div>
 
           <div>

@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useCostCenters, CostCenter, CostCenterInsert } from "@/hooks/useCostCenters";
+import { useGroupCompanies } from "@/hooks/useGroupCompanies";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -9,13 +10,16 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Badge } from "@/components/ui/badge";
 import { Plus, Pencil, Trash2 } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
+import { CompanyFilter } from "@/components/finance/CompanyFilter";
 
 const emptyForm: CostCenterInsert = {
-  code: "", name: "", description: "", active: true,
+  code: "", name: "", description: "", active: true, company_id: null,
 };
 
 export const CostCentersList = () => {
-  const { data: centers, isLoading, create, update, remove } = useCostCenters();
+  const [companyFilter, setCompanyFilter] = useState("all");
+  const { data: centers, isLoading, create, update, remove } = useCostCenters(companyFilter);
+  const { companies } = useGroupCompanies();
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState<CostCenter | null>(null);
   const [form, setForm] = useState<CostCenterInsert>(emptyForm);
@@ -23,7 +27,7 @@ export const CostCentersList = () => {
   const handleOpen = (center?: CostCenter) => {
     if (center) {
       setEditing(center);
-      setForm({ code: center.code, name: center.name, description: center.description, active: center.active });
+      setForm({ code: center.code, name: center.name, description: center.description, active: center.active, company_id: center.company_id });
     } else {
       setEditing(null);
       setForm(emptyForm);
@@ -33,16 +37,20 @@ export const CostCentersList = () => {
 
   const handleSave = () => {
     if (!form.code.trim() || !form.name.trim()) return;
+    const payload = { ...form, company_id: form.company_id === null ? null : form.company_id };
     if (editing) {
-      update.mutate({ id: editing.id, ...form }, { onSuccess: () => setOpen(false) });
+      update.mutate({ id: editing.id, ...payload }, { onSuccess: () => setOpen(false) });
     } else {
-      create.mutate(form, { onSuccess: () => setOpen(false) });
+      create.mutate(payload, { onSuccess: () => setOpen(false) });
     }
   };
 
+  const getCompanyName = (id: string | null) => companies.find(c => c.id === id)?.name ?? "—";
+
   return (
     <div className="space-y-4">
-      <div className="flex justify-end">
+      <div className="flex items-center justify-between gap-4 flex-wrap">
+        <CompanyFilter value={companyFilter} onChange={setCompanyFilter} />
         <Dialog open={open} onOpenChange={setOpen}>
           <DialogTrigger asChild>
             <Button onClick={() => handleOpen()}><Plus className="w-4 h-4 mr-2" />Novo Centro de Custo</Button>
@@ -55,6 +63,10 @@ export const CostCentersList = () => {
                 <div><Label>Nome *</Label><Input value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} /></div>
               </div>
               <div><Label>Descrição</Label><Textarea value={form.description ?? ""} onChange={e => setForm(f => ({ ...f, description: e.target.value }))} rows={2} /></div>
+              <div>
+                <Label>Filial</Label>
+                <CompanyFilter value={form.company_id ?? "none"} onChange={v => setForm(f => ({ ...f, company_id: v === "none" ? null : v }))} formMode className="w-full" />
+              </div>
               <div className="flex items-center gap-2">
                 <Switch checked={form.active} onCheckedChange={v => setForm(f => ({ ...f, active: v }))} />
                 <Label>Ativo</Label>
@@ -78,18 +90,20 @@ export const CostCentersList = () => {
                 <TableHead>Código</TableHead>
                 <TableHead>Nome</TableHead>
                 <TableHead>Descrição</TableHead>
+                <TableHead>Filial</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead className="w-[100px]">Ações</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {(centers?.length ?? 0) === 0 ? (
-                <TableRow><TableCell colSpan={5} className="text-center text-muted-foreground py-8">Nenhum centro de custo cadastrado</TableCell></TableRow>
+                <TableRow><TableCell colSpan={6} className="text-center text-muted-foreground py-8">Nenhum centro de custo cadastrado</TableCell></TableRow>
               ) : centers?.map(c => (
                 <TableRow key={c.id}>
                   <TableCell className="font-mono">{c.code}</TableCell>
                   <TableCell className="font-medium">{c.name}</TableCell>
                   <TableCell className="text-muted-foreground">{c.description || "—"}</TableCell>
+                  <TableCell className="text-muted-foreground">{getCompanyName(c.company_id)}</TableCell>
                   <TableCell><Badge variant={c.active ? "default" : "secondary"}>{c.active ? "Ativo" : "Inativo"}</Badge></TableCell>
                   <TableCell>
                     <div className="flex gap-1">

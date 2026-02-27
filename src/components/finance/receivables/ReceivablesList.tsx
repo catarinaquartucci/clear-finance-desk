@@ -23,6 +23,7 @@ import { useReceivables } from "@/hooks/useReceivables";
 import { ReceivableForm } from "./ReceivableForm";
 import { ReceivableReceiveDialog } from "./ReceivableReceiveDialog";
 import { useAuth } from "@/contexts/AuthContext";
+import { CompanyFilter } from "@/components/finance/CompanyFilter";
 
 const STATUS_CONFIG: Record<string, { label: string; variant: "default" | "secondary" | "destructive" | "outline"; icon: any }> = {
   open: { label: "Aberto", variant: "outline", icon: Clock },
@@ -34,12 +35,13 @@ const STATUS_CONFIG: Record<string, { label: string; variant: "default" | "secon
 export const ReceivablesList = () => {
   const { hasFinanceViewOnly } = useAuth();
   const [statusFilter, setStatusFilter] = useState("all");
+  const [companyFilter, setCompanyFilter] = useState("all");
   const [search, setSearch] = useState("");
   const [formOpen, setFormOpen] = useState(false);
   const [receiveDialogId, setReceiveDialogId] = useState<string | null>(null);
   const [deleteId, setDeleteId] = useState<string | null>(null);
 
-  const { receivables, isLoading, stats, createReceivable, deleteReceivable, markAsReceived } = useReceivables(statusFilter);
+  const { receivables, isLoading, stats, createReceivable, deleteReceivable, markAsReceived } = useReceivables(statusFilter, companyFilter);
 
   const today = new Date().toISOString().split("T")[0];
 
@@ -60,36 +62,15 @@ export const ReceivablesList = () => {
     <div className="space-y-4">
       {/* Stats cards */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <Card>
-          <CardContent className="pt-4 pb-4">
-            <p className="text-xs text-muted-foreground">Inadimplentes</p>
-            <p className="text-xl font-bold text-destructive">{fmt(stats.totalOverdue)}</p>
-            <p className="text-xs text-muted-foreground">{stats.overdue} título(s)</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="pt-4 pb-4">
-            <p className="text-xs text-muted-foreground">Vence Hoje</p>
-            <p className="text-xl font-bold text-amber-500">{stats.dueToday}</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="pt-4 pb-4">
-            <p className="text-xs text-muted-foreground">Próx. 7 dias</p>
-            <p className="text-xl font-bold">{stats.dueThisWeek}</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="pt-4 pb-4">
-            <p className="text-xs text-muted-foreground">Total a Receber</p>
-            <p className="text-xl font-bold">{fmt(stats.totalOpen)}</p>
-          </CardContent>
-        </Card>
+        <Card><CardContent className="pt-4 pb-4"><p className="text-xs text-muted-foreground">Inadimplentes</p><p className="text-xl font-bold text-destructive">{fmt(stats.totalOverdue)}</p><p className="text-xs text-muted-foreground">{stats.overdue} título(s)</p></CardContent></Card>
+        <Card><CardContent className="pt-4 pb-4"><p className="text-xs text-muted-foreground">Vence Hoje</p><p className="text-xl font-bold text-amber-500">{stats.dueToday}</p></CardContent></Card>
+        <Card><CardContent className="pt-4 pb-4"><p className="text-xs text-muted-foreground">Próx. 7 dias</p><p className="text-xl font-bold">{stats.dueThisWeek}</p></CardContent></Card>
+        <Card><CardContent className="pt-4 pb-4"><p className="text-xs text-muted-foreground">Total a Receber</p><p className="text-xl font-bold">{fmt(stats.totalOpen)}</p></CardContent></Card>
       </div>
 
       {/* Toolbar */}
       <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center justify-between">
-        <div className="flex gap-2 flex-1 w-full sm:w-auto">
+        <div className="flex gap-2 flex-1 w-full sm:w-auto flex-wrap">
           <div className="relative flex-1 max-w-xs">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
             <Input placeholder="Buscar..." value={search} onChange={(e) => setSearch(e.target.value)} className="pl-9" />
@@ -103,6 +84,7 @@ export const ReceivablesList = () => {
               <SelectItem value="cancelled">Cancelados</SelectItem>
             </SelectContent>
           </Select>
+          <CompanyFilter value={companyFilter} onChange={setCompanyFilter} />
         </div>
         {!hasFinanceViewOnly && (
           <Button onClick={() => setFormOpen(true)}><Plus className="w-4 h-4 mr-1" /> Nova Conta</Button>

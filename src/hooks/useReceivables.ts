@@ -39,11 +39,11 @@ export interface ReceivableInsert {
   notes?: string | null;
 }
 
-export const useReceivables = (statusFilter?: string) => {
+export const useReceivables = (statusFilter?: string, companyId?: string) => {
   const queryClient = useQueryClient();
 
   const { data: receivables, isLoading } = useQuery({
-    queryKey: ["receivables", statusFilter],
+    queryKey: ["receivables", statusFilter, companyId],
     queryFn: async () => {
       let query = supabase
         .from("receivables")
@@ -56,6 +56,9 @@ export const useReceivables = (statusFilter?: string) => {
 
       if (statusFilter && statusFilter !== "all") {
         query = query.eq("status", statusFilter);
+      }
+      if (companyId && companyId !== "all") {
+        query = query.eq("company_id", companyId);
       }
 
       const { data, error } = await query;

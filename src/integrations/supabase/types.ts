@@ -63,6 +63,7 @@ export type Database = {
           active: boolean
           agency: string | null
           bank_name: string
+          company_id: string | null
           created_at: string
           current_balance: number
           id: string
@@ -76,6 +77,7 @@ export type Database = {
           active?: boolean
           agency?: string | null
           bank_name: string
+          company_id?: string | null
           created_at?: string
           current_balance?: number
           id?: string
@@ -89,6 +91,7 @@ export type Database = {
           active?: boolean
           agency?: string | null
           bank_name?: string
+          company_id?: string | null
           created_at?: string
           current_balance?: number
           id?: string
@@ -96,7 +99,15 @@ export type Database = {
           name?: string
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "bank_accounts_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "group_companies"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       bank_transactions: {
         Row: {
@@ -625,6 +636,7 @@ export type Database = {
         Row: {
           active: boolean
           code: string
+          company_id: string | null
           created_at: string
           description: string | null
           id: string
@@ -634,6 +646,7 @@ export type Database = {
         Insert: {
           active?: boolean
           code: string
+          company_id?: string | null
           created_at?: string
           description?: string | null
           id?: string
@@ -643,18 +656,28 @@ export type Database = {
         Update: {
           active?: boolean
           code?: string
+          company_id?: string | null
           created_at?: string
           description?: string | null
           id?: string
           name?: string
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "cost_centers_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "group_companies"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       customers: {
         Row: {
           active: boolean
           address: string | null
+          company_id: string | null
           contact_email: string | null
           contact_phone: string | null
           created_at: string
@@ -667,6 +690,7 @@ export type Database = {
         Insert: {
           active?: boolean
           address?: string | null
+          company_id?: string | null
           contact_email?: string | null
           contact_phone?: string | null
           created_at?: string
@@ -679,6 +703,7 @@ export type Database = {
         Update: {
           active?: boolean
           address?: string | null
+          company_id?: string | null
           contact_email?: string | null
           contact_phone?: string | null
           created_at?: string
@@ -688,7 +713,15 @@ export type Database = {
           segment?: string | null
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "customers_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "group_companies"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       devolucao_anexos: {
         Row: {
@@ -1594,6 +1627,7 @@ export type Database = {
           amount: number
           bank_account_id: string | null
           chart_account_id: string | null
+          company_id: string | null
           cost_center_id: string | null
           created_at: string
           description: string
@@ -1612,6 +1646,7 @@ export type Database = {
           amount: number
           bank_account_id?: string | null
           chart_account_id?: string | null
+          company_id?: string | null
           cost_center_id?: string | null
           created_at?: string
           description: string
@@ -1630,6 +1665,7 @@ export type Database = {
           amount?: number
           bank_account_id?: string | null
           chart_account_id?: string | null
+          company_id?: string | null
           cost_center_id?: string | null
           created_at?: string
           description?: string
@@ -1657,6 +1693,13 @@ export type Database = {
             columns: ["chart_account_id"]
             isOneToOne: false
             referencedRelation: "chart_of_accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payables_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "group_companies"
             referencedColumns: ["id"]
           },
           {
@@ -1710,6 +1753,7 @@ export type Database = {
           amount: number
           bank_account_id: string | null
           chart_account_id: string | null
+          company_id: string | null
           cost_center_id: string | null
           created_at: string
           customer_id: string | null
@@ -1728,6 +1772,7 @@ export type Database = {
           amount: number
           bank_account_id?: string | null
           chart_account_id?: string | null
+          company_id?: string | null
           cost_center_id?: string | null
           created_at?: string
           customer_id?: string | null
@@ -1746,6 +1791,7 @@ export type Database = {
           amount?: number
           bank_account_id?: string | null
           chart_account_id?: string | null
+          company_id?: string | null
           cost_center_id?: string | null
           created_at?: string
           customer_id?: string | null
@@ -1773,6 +1819,13 @@ export type Database = {
             columns: ["chart_account_id"]
             isOneToOne: false
             referencedRelation: "chart_of_accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "receivables_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "group_companies"
             referencedColumns: ["id"]
           },
           {
@@ -2038,6 +2091,7 @@ export type Database = {
           bank_agency: string | null
           bank_name: string | null
           category: string | null
+          company_id: string | null
           contact_email: string | null
           contact_phone: string | null
           created_at: string
@@ -2054,6 +2108,7 @@ export type Database = {
           bank_agency?: string | null
           bank_name?: string | null
           category?: string | null
+          company_id?: string | null
           contact_email?: string | null
           contact_phone?: string | null
           created_at?: string
@@ -2070,6 +2125,7 @@ export type Database = {
           bank_agency?: string | null
           bank_name?: string | null
           category?: string | null
+          company_id?: string | null
           contact_email?: string | null
           contact_phone?: string | null
           created_at?: string
@@ -2079,7 +2135,15 @@ export type Database = {
           pix_key?: string | null
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "suppliers_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "group_companies"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       system_settings: {
         Row: {

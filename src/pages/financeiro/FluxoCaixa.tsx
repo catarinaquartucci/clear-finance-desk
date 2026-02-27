@@ -7,8 +7,7 @@ import { CashFlowFilters } from "@/components/finance/cash-flow/CashFlowFilters"
 import { CashFlowTable } from "@/components/finance/cash-flow/CashFlowTable";
 import { CashFlowDetailedTable } from "@/components/finance/cash-flow/CashFlowDetailedTable";
 import { CashFlowExportButton } from "@/components/finance/cash-flow/CashFlowExportButton";
-import { MarveeSyncButton } from "@/components/finance/cash-flow/MarveeSyncButton";
-import { MarveeMappingDialog } from "@/components/finance/cash-flow/MarveeMappingDialog";
+import { CompanyFilter } from "@/components/finance/CompanyFilter";
 import { useCashFlowData } from "@/hooks/useCashFlowData";
 import { useCashFlowDataDetailed } from "@/hooks/useCashFlowDataDetailed";
 import { useAppPreferences } from "@/contexts/AppPreferencesContext";
@@ -28,8 +27,8 @@ const FluxoCaixa = () => {
   const year = parseInt(financialYear);
   const setYear = (y: number) => setFinancialYear(y.toString());
   
-  const [showMappingDialog, setShowMappingDialog] = useState(false);
   const [activeTab, setActiveTab] = useState<string>("aggregated");
+  const [companyFilter, setCompanyFilter] = useState("all");
 
   const { rows, months, isLoading, upsertData } = useCashFlowData(year);
   const { 
@@ -70,10 +69,7 @@ const FluxoCaixa = () => {
           </div>
           
           <div className="flex items-center gap-4">
-            <MarveeSyncButton 
-              year={year} 
-              onOpenMappings={() => setShowMappingDialog(true)} 
-            />
+            <CompanyFilter value={companyFilter} onChange={setCompanyFilter} />
             <CashFlowExportButton
               rows={rows}
               months={months}
@@ -82,11 +78,6 @@ const FluxoCaixa = () => {
             />
           </div>
         </div>
-
-        <MarveeMappingDialog 
-          open={showMappingDialog} 
-          onOpenChange={setShowMappingDialog} 
-        />
 
         {/* Filters */}
         <Card>
@@ -141,7 +132,7 @@ const FluxoCaixa = () => {
               <CardHeader className="pb-2">
                 <CardTitle className="text-lg">Fluxo de Caixa Detalhado (3 Níveis)</CardTitle>
                 <CardDescription>
-                  Dados sincronizados do Marvee com hierarquia completa de categorias
+                  Hierarquia completa de categorias
                   {" - "}Ano {year}
                 </CardDescription>
               </CardHeader>

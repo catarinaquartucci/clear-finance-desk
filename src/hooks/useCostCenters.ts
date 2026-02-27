@@ -8,22 +8,24 @@ export interface CostCenter {
   name: string;
   description: string | null;
   active: boolean;
+  company_id: string | null;
   created_at: string;
   updated_at: string;
 }
 
 export type CostCenterInsert = Omit<CostCenter, "id" | "created_at" | "updated_at">;
 
-export const useCostCenters = () => {
+export const useCostCenters = (companyId?: string) => {
   const queryClient = useQueryClient();
 
   const query = useQuery({
-    queryKey: ["cost_centers"],
+    queryKey: ["cost_centers", companyId],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from("cost_centers")
-        .select("*")
-        .order("code");
+      let q = supabase.from("cost_centers").select("*").order("code");
+      if (companyId && companyId !== "all") {
+        q = q.eq("company_id", companyId);
+      }
+      const { data, error } = await q;
       if (error) throw error;
       return data as CostCenter[];
     },
@@ -33,7 +35,7 @@ export const useCostCenters = () => {
     mutationFn: async (center: CostCenterInsert) => {
       const { data, error } = await supabase
         .from("cost_centers")
-        .insert(center)
+        .insert(center as any)
         .select()
         .single();
       if (error) throw error;
@@ -48,7 +50,7 @@ export const useCostCenters = () => {
 
   const update = useMutation({
     mutationFn: async ({ id, ...data }: Partial<CostCenter> & { id: string }) => {
-      const { error } = await supabase.from("cost_centers").update(data).eq("id", id);
+      const { error } = await supabase.from("cost_centers").update(data as any).eq("id", id);
       if (error) throw error;
     },
     onSuccess: () => {
