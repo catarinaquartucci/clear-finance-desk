@@ -2,13 +2,13 @@ import { Header } from "@/components/Layout/Header";
 import { Navigation } from "@/components/Layout/Navigation";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ReembolsoForm } from "@/components/Forms/ReembolsoForm";
-import { DevolucaoForm } from "@/components/Forms/DevolucaoForm";
+
 import { MaterialForm } from "@/components/Forms/MaterialForm";
 import { MyReembolsosList } from "@/components/Dashboard/MyReembolsosList";
-import { MyDevolucoesList } from "@/components/Dashboard/MyDevolucoesList";
+
 import { MyMateriaisList } from "@/components/Dashboard/MyMateriaisList";
 import { useAppPreferences } from "@/contexts/AppPreferencesContext";
-import { DollarSign, TrendingUp, Package, List } from "lucide-react";
+import { DollarSign, Package, List } from "lucide-react";
 
 const Solicitacoes = () => {
   const { solicitacoesTab: activeTab, setSolicitacoesTab: setActiveTab } = useAppPreferences();
@@ -27,14 +27,10 @@ const Solicitacoes = () => {
         </div>
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-          <TabsList className="grid w-full max-w-2xl grid-cols-4 bg-card-dark border border-subtle">
+          <TabsList className="grid w-full max-w-2xl grid-cols-3 bg-card-dark border border-subtle">
             <TabsTrigger value="reembolso" className="gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
               <DollarSign className="w-4 h-4" />
               Reembolso
-            </TabsTrigger>
-            <TabsTrigger value="devolucao" className="gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
-              <TrendingUp className="w-4 h-4" />
-              Devolução
             </TabsTrigger>
             <TabsTrigger value="materiais" className="gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
               <Package className="w-4 h-4" />
@@ -50,10 +46,6 @@ const Solicitacoes = () => {
             <ReembolsoForm />
           </TabsContent>
 
-          <TabsContent value="devolucao" className="space-y-4">
-            <DevolucaoForm />
-          </TabsContent>
-
           <TabsContent value="materiais" className="space-y-4">
             <MaterialForm />
           </TabsContent>
@@ -61,7 +53,6 @@ const Solicitacoes = () => {
           <TabsContent value="minhas" className="space-y-4">
             <div className="space-y-6">
               <MyReembolsosList />
-              <MyDevolucoesList />
               <MyMateriaisList />
             </div>
           </TabsContent>

@@ -1,6 +1,6 @@
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { ReembolsosList } from "@/components/Dashboard/ReembolsosList";
-import { DevolucoesList } from "@/components/Dashboard/DevolucoesList";
+
 import { NotasFiscaisList } from "@/components/Dashboard/NotasFiscaisList";
 import { MateriaisList } from "@/components/Dashboard/MateriaisList";
 import { NotasFiscaisMesList } from "@/components/Dashboard/NotasFiscaisMesList";
@@ -9,10 +9,10 @@ import { ApprovalFilters, filterItemsByDate, filterItemsByStatus } from "@/compo
 import { useAppPreferences } from "@/contexts/AppPreferencesContext";
 import { useAdminStats } from "@/hooks/useAdminStats";
 import { useReembolsos } from "@/hooks/useReembolsos";
-import { useDevolucoes } from "@/hooks/useDevolucoes";
+
 import { useMateriais } from "@/hooks/useMateriais";
 import { useNotasFiscais } from "@/hooks/useNotasFiscais";
-import { DollarSign, TrendingUp, Receipt, Package } from "lucide-react";
+import { DollarSign, Receipt, Package } from "lucide-react";
 import ErrorBoundary from "@/components/ErrorBoundary";
 
 // Helper para calcular estatísticas de uma lista
@@ -46,7 +46,7 @@ const AdminDashboard = () => {
   
   // Buscar dados para contadores de pendentes
   const { reembolsos } = useReembolsos();
-  const { devolucoes } = useDevolucoes();
+  
   const { materiais } = useMateriais();
   const { notasFiscais } = useNotasFiscais();
 
@@ -58,23 +58,23 @@ const AdminDashboard = () => {
   };
 
   const filteredReembolsos = applyFilters(reembolsos);
-  const filteredDevolucoes = applyFilters(devolucoes);
+  
   const filteredMateriais = applyFilters(materiais);
   const filteredNotas = applyFilters(notasFiscais);
 
   // Calcular estatísticas por categoria (usando dados filtrados)
   const statsReembolsos = calculateStats(filteredReembolsos, true);
-  const statsDevolucoes = calculateStats(filteredDevolucoes, true);
+  
   const statsMateriais = calculateStats(filteredMateriais, false); // Materiais não tem valor
   const statsNotas = calculateStats(filteredNotas, true);
   
-  const totalPendentes = statsReembolsos.pendentes + statsDevolucoes.pendentes + 
+  const totalPendentes = statsReembolsos.pendentes + 
                          statsMateriais.pendentes + statsNotas.pendentes;
 
   // Definir seções a expandir por padrão (as que têm pendentes)
   const defaultOpen = [];
   if (statsReembolsos.pendentes > 0) defaultOpen.push("reembolsos");
-  if (statsDevolucoes.pendentes > 0) defaultOpen.push("devolucoes");
+  
   if (statsMateriais.pendentes > 0) defaultOpen.push("materiais");
   if (statsNotas.pendentes > 0) defaultOpen.push("notas");
   // Se não houver pendentes, abrir a primeira
@@ -130,25 +130,6 @@ const AdminDashboard = () => {
             </AccordionTrigger>
             <AccordionContent className="pt-2 pb-4">
               <ReembolsosList embedded data={filteredReembolsos} />
-            </AccordionContent>
-          </AccordionItem>
-
-          {/* Devoluções */}
-          <AccordionItem 
-            value="devolucoes" 
-            className="border border-subtle rounded-lg bg-card px-4 data-[state=open]:ring-1 data-[state=open]:ring-primary/20"
-          >
-            <AccordionTrigger className="hover:no-underline py-3">
-              <div className="flex items-center gap-3 flex-1">
-                <div className="p-2 rounded-lg bg-cyan/10">
-                  <TrendingUp className="w-5 h-5 text-cyan" />
-                </div>
-                <span className="font-semibold text-lg whitespace-nowrap">Devoluções</span>
-                <ApprovalSectionStats stats={statsDevolucoes} variant="header" />
-              </div>
-            </AccordionTrigger>
-            <AccordionContent className="pt-2 pb-4">
-              <DevolucoesList embedded data={filteredDevolucoes} />
             </AccordionContent>
           </AccordionItem>
 
