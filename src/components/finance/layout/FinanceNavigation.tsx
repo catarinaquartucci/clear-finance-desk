@@ -15,9 +15,11 @@ import {
   FileBarChart,
   FileText,
   Barcode,
+  LayoutDashboard,
 } from "lucide-react";
 
 const financeNavItems = [
+  { icon: LayoutDashboard, label: "Dashboard", path: "/financeiro/dashboard" },
   { icon: Database, label: "Cadastros", path: "/financeiro/cadastros" },
   { icon: Receipt, label: "Contas a Pagar", path: "/financeiro/contas-pagar" },
   { icon: HandCoins, label: "Contas a Receber", path: "/financeiro/contas-receber" },
