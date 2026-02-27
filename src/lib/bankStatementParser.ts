@@ -24,7 +24,16 @@ function detectItauCSV(headerLine: string): boolean {
 }
 
 /**
- * Parse OFX file content into bank transactions
+ * Extract a tag value from a block of SGML-like content (no closing tags needed)
+ */
+function getValue(block: string, tag: string): string | null {
+  const regex = new RegExp(`<${tag}>([^<\\n]+)`, "i");
+  const m = block.match(regex);
+  return m ? m[1].trim() : null;
+}
+
+/**
+ * Parse OFX file content (with closing tags) into bank transactions
  */
 export function parseOFX(content: string, bankAccountId: string): ParseResult {
   const transactions: BankTransactionInsert[] = [];
@@ -36,17 +45,53 @@ export function parseOFX(content: string, bankAccountId: string): ParseResult {
   while ((match = stmtTrnRegex.exec(content)) !== null) {
     const block = match[1];
 
-    const getValue = (tag: string): string | null => {
-      const regex = new RegExp(`<${tag}>([^<\\n]+)`, "i");
-      const m = block.match(regex);
-      return m ? m[1].trim() : null;
-    };
+    const dtPosted = getValue(block, "DTPOSTED");
+    const trnAmt = getValue(block, "TRNAMT");
+    const memo = getValue(block, "MEMO") || getValue(block, "NAME") || "Sem descrição";
+    const fitId = getValue(block, "FITID");
+    const checkNum = getValue(block, "CHECKNUM");
 
-    const dtPosted = getValue("DTPOSTED");
-    const trnAmt = getValue("TRNAMT");
-    const memo = getValue("MEMO") || getValue("NAME") || "Sem descrição";
-    const fitId = getValue("FITID");
-    const checkNum = getValue("CHECKNUM");
+    if (!dtPosted || !trnAmt) continue;
+
+    const dateStr = `${dtPosted.substring(0, 4)}-${dtPosted.substring(4, 6)}-${dtPosted.substring(6, 8)}`;
+    const amount = parseFloat(trnAmt);
+    const type = amount >= 0 ? "credit" : "debit";
+
+    const hash = `${bankAccountId}-${fitId || `${dateStr}-${amount}-${memo}`}`;
+
+    transactions.push({
+      bank_account_id: bankAccountId,
+      date: dateStr,
+      description: memo,
+      amount: Math.abs(amount),
+      type,
+      reference: fitId || checkNum || undefined,
+      import_hash: hash,
+    });
+  }
+
+  return { transactions, detectedBank: isItau ? "itau" : null };
+}
+
+/**
+ * Parse OFC file content (without closing tags) into bank transactions.
+ * OFC 1.x uses <STMTTRN> to delimit each transaction without </STMTTRN>.
+ */
+export function parseOFC(content: string, bankAccountId: string): ParseResult {
+  const transactions: BankTransactionInsert[] = [];
+  const isItau = detectItauOFX(content);
+
+  // Split by <STMTTRN> occurrences; first element is header/preamble
+  const blocks = content.split(/<STMTTRN>/i);
+
+  for (let i = 1; i < blocks.length; i++) {
+    const block = blocks[i];
+
+    const dtPosted = getValue(block, "DTPOSTED");
+    const trnAmt = getValue(block, "TRNAMT");
+    const memo = getValue(block, "MEMO") || getValue(block, "NAME") || "Sem descrição";
+    const fitId = getValue(block, "FITID");
+    const checkNum = getValue(block, "CHECKNUM");
 
     if (!dtPosted || !trnAmt) continue;
 
@@ -185,13 +230,21 @@ export function parseCSV(content: string, bankAccountId: string): ParseResult {
 export function parseStatement(content: string, bankAccountId: string, fileName: string): ParseResult {
   const ext = fileName.toLowerCase();
 
-  if (ext.endsWith(".ofx") || ext.endsWith(".ofc")) {
-    return parseOFX(content, bankAccountId);
+  if (ext.endsWith(".ofc")) {
+    return parseOFC(content, bankAccountId);
+  }
+
+  if (ext.endsWith(".ofx")) {
+    // Some OFX files lack closing tags (SGML-style) — detect and use OFC parser
+    const hasClosingTags = /<\/STMTTRN>/i.test(content);
+    return hasClosingTags
+      ? parseOFX(content, bankAccountId)
+      : parseOFC(content, bankAccountId);
   }
 
   if (ext.endsWith(".csv") || ext.endsWith(".txt")) {
     return parseCSV(content, bankAccountId);
   }
 
-  throw new Error("Formato não suportado. Use OFX ou CSV.");
+  throw new Error("Formato não suportado. Use OFX, OFC ou CSV.");
 }
