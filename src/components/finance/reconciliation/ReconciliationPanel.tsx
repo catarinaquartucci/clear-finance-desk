@@ -1,12 +1,12 @@
 import { useState } from "react";
 import { format } from "date-fns";
 import {
-  Upload, Search, CheckCircle2, Circle, Link2, Unlink, ArrowDownCircle, ArrowUpCircle
+  Upload, Search, CheckCircle2, Circle, Link2, Unlink, ArrowDownCircle, ArrowUpCircle, Wand2
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow
@@ -17,7 +17,9 @@ import { usePayables } from "@/hooks/usePayables";
 import { useReceivables } from "@/hooks/useReceivables";
 import { ImportStatementDialog } from "./ImportStatementDialog";
 import { ConciliateDialog } from "./ConciliateDialog";
+import { AutoConciliationDialog } from "./AutoConciliationDialog";
 import { useAuth } from "@/contexts/AuthContext";
+import { findMatches, type MatchCandidate } from "@/lib/autoConciliation";
 
 export const ReconciliationPanel = () => {
   const { hasFinanceViewOnly } = useAuth();
@@ -31,11 +33,14 @@ export const ReconciliationPanel = () => {
   const [search, setSearch] = useState("");
   const [conciliateId, setConciliateId] = useState<string | null>(null);
   const [showFilter, setShowFilter] = useState<"all" | "pending" | "conciliated">("all");
+  const [autoOpen, setAutoOpen] = useState(false);
+  const [autoMatches, setAutoMatches] = useState<MatchCandidate[]>([]);
 
   const {
     transactions, isLoading, stats,
     importTransactions, isImporting,
     conciliate, unconciliate,
+    batchConciliate, isBatchConciliating,
   } = useBankTransactions(selectedAccount, selectedMonth);
 
   const { payables } = usePayables("open");
@@ -52,7 +57,6 @@ export const ReconciliationPanel = () => {
   const fmt = (v: number) =>
     new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(v);
 
-  // Generate month options
   const monthOptions = Array.from({ length: 12 }, (_, i) => {
     const d = new Date();
     d.setMonth(d.getMonth() - i);
@@ -61,6 +65,25 @@ export const ReconciliationPanel = () => {
       label: format(d, "MMM yyyy"),
     };
   });
+
+  const handleAutoConciliate = () => {
+    if (!transactions || !payables || !receivables) return;
+    const matches = findMatches(transactions, payables, receivables);
+    setAutoMatches(matches);
+    setAutoOpen(true);
+  };
+
+  const handleConfirmAuto = (selected: MatchCandidate[]) => {
+    batchConciliate(
+      selected.map(m => ({
+        transactionId: m.transactionId,
+        withType: m.withType,
+        withId: m.withId,
+      }))
+    );
+    setAutoOpen(false);
+    setAutoMatches([]);
+  };
 
   return (
     <div className="space-y-4">
@@ -85,9 +108,18 @@ export const ReconciliationPanel = () => {
           </Select>
         </div>
         {!hasFinanceViewOnly && (
-          <Button onClick={() => setImportOpen(true)} disabled={!selectedAccount}>
-            <Upload className="w-4 h-4 mr-1" /> Importar Extrato
-          </Button>
+          <div className="flex gap-2">
+            <Button
+              variant="outline"
+              onClick={handleAutoConciliate}
+              disabled={!selectedAccount || stats.pending === 0}
+            >
+              <Wand2 className="w-4 h-4 mr-1" /> Conciliar Automaticamente
+            </Button>
+            <Button onClick={() => setImportOpen(true)} disabled={!selectedAccount}>
+              <Upload className="w-4 h-4 mr-1" /> Importar Extrato
+            </Button>
+          </div>
         )}
       </div>
 
@@ -237,6 +269,15 @@ export const ReconciliationPanel = () => {
           }}
         />
       )}
+
+      <AutoConciliationDialog
+        open={autoOpen}
+        onOpenChange={setAutoOpen}
+        matches={autoMatches}
+        transactions={transactions ?? []}
+        onConfirm={handleConfirmAuto}
+        isProcessing={isBatchConciliating}
+      />
     </div>
   );
 };

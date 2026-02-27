@@ -1,12 +1,35 @@
 import type { BankTransactionInsert } from "@/hooks/useBankTransactions";
 
+export interface ParseResult {
+  transactions: BankTransactionInsert[];
+  detectedBank: string | null;
+}
+
+/**
+ * Detect if OFX content is from Itaú (BANKID 341)
+ */
+function detectItauOFX(content: string): boolean {
+  return /<BANKID>341/i.test(content);
+}
+
+/**
+ * Detect if CSV content is from Itaú by header pattern
+ */
+function detectItauCSV(headerLine: string): boolean {
+  const lower = headerLine.toLowerCase();
+  return (
+    (lower.includes("lançamento") || lower.includes("lancamento")) &&
+    (lower.includes("ag./origem") || lower.includes("ag.") || lower.includes("origem"))
+  );
+}
+
 /**
  * Parse OFX file content into bank transactions
  */
-export function parseOFX(content: string, bankAccountId: string): BankTransactionInsert[] {
+export function parseOFX(content: string, bankAccountId: string): ParseResult {
   const transactions: BankTransactionInsert[] = [];
+  const isItau = detectItauOFX(content);
 
-  // Extract STMTTRN blocks
   const stmtTrnRegex = /<STMTTRN>([\s\S]*?)<\/STMTTRN>/gi;
   let match;
 
@@ -19,11 +42,11 @@ export function parseOFX(content: string, bankAccountId: string): BankTransactio
       return m ? m[1].trim() : null;
     };
 
-    const trnType = getValue("TRNTYPE"); // DEBIT, CREDIT
-    const dtPosted = getValue("DTPOSTED"); // YYYYMMDD or YYYYMMDDHHMMSS
+    const dtPosted = getValue("DTPOSTED");
     const trnAmt = getValue("TRNAMT");
     const memo = getValue("MEMO") || getValue("NAME") || "Sem descrição";
     const fitId = getValue("FITID");
+    const checkNum = getValue("CHECKNUM");
 
     if (!dtPosted || !trnAmt) continue;
 
@@ -31,7 +54,6 @@ export function parseOFX(content: string, bankAccountId: string): BankTransactio
     const amount = parseFloat(trnAmt);
     const type = amount >= 0 ? "credit" : "debit";
 
-    // Generate hash for dedup
     const hash = `${bankAccountId}-${fitId || `${dateStr}-${amount}-${memo}`}`;
 
     transactions.push({
@@ -40,27 +62,78 @@ export function parseOFX(content: string, bankAccountId: string): BankTransactio
       description: memo,
       amount: Math.abs(amount),
       type,
-      reference: fitId,
+      reference: fitId || checkNum || undefined,
       import_hash: hash,
     });
   }
 
-  return transactions;
+  return { transactions, detectedBank: isItau ? "itau" : null };
 }
 
 /**
- * Parse CSV file content into bank transactions.
- * Expects headers: date, description, amount (or value), type (optional)
- * Common Brazilian bank formats are handled.
+ * Parse Itaú-specific CSV format.
+ * Layout: Data;Lançamento;Ag./Origem;Valor;Saldo
  */
-export function parseCSV(content: string, bankAccountId: string): BankTransactionInsert[] {
+export function parseItauCSV(content: string, bankAccountId: string): ParseResult {
   const lines = content.split(/\r?\n/).filter(l => l.trim());
-  if (lines.length < 2) return [];
+  if (lines.length < 2) return { transactions: [], detectedBank: "itau" };
+
+  const transactions: BankTransactionInsert[] = [];
+
+  // Skip header line
+  for (let i = 1; i < lines.length; i++) {
+    const cols = lines[i].split(";").map(c => c.trim().replace(/^"|"$/g, ""));
+    if (cols.length < 4) continue;
+
+    const rawDate = cols[0];
+    const description = cols[1] || "Sem descrição";
+    const agOrigem = cols[2] || "";
+    const rawAmount = cols[3].replace(/\./g, "").replace(",", ".");
+    const amount = parseFloat(rawAmount);
+
+    if (isNaN(amount) || !rawDate) continue;
+
+    // Parse DD/MM/YYYY
+    let dateStr: string;
+    if (rawDate.includes("/")) {
+      const parts = rawDate.split("/");
+      dateStr = `${parts[2]}-${parts[1].padStart(2, "0")}-${parts[0].padStart(2, "0")}`;
+    } else {
+      dateStr = rawDate;
+    }
+
+    const type = amount >= 0 ? "credit" : "debit";
+    const descWithOrigin = agOrigem ? `${description} [${agOrigem}]` : description;
+    const hash = `${bankAccountId}-itau-${dateStr}-${amount}-${description.substring(0, 50)}-${i}`;
+
+    transactions.push({
+      bank_account_id: bankAccountId,
+      date: dateStr,
+      description: descWithOrigin,
+      amount: Math.abs(amount),
+      type,
+      import_hash: hash,
+    });
+  }
+
+  return { transactions, detectedBank: "itau" };
+}
+
+/**
+ * Parse generic CSV file content into bank transactions.
+ */
+export function parseCSV(content: string, bankAccountId: string): ParseResult {
+  const lines = content.split(/\r?\n/).filter(l => l.trim());
+  if (lines.length < 2) return { transactions: [], detectedBank: null };
+
+  // Check if it's Itaú format
+  if (detectItauCSV(lines[0])) {
+    return parseItauCSV(content, bankAccountId);
+  }
 
   const separator = lines[0].includes(";") ? ";" : ",";
   const headers = lines[0].split(separator).map(h => h.trim().toLowerCase().replace(/"/g, ""));
 
-  // Find column indices
   const dateIdx = headers.findIndex(h => ["data", "date", "dt_movimento", "dt"].includes(h));
   const descIdx = headers.findIndex(h => ["descricao", "description", "desc", "historico", "memo", "descrição", "histórico"].includes(h));
   const amountIdx = headers.findIndex(h => ["valor", "amount", "value", "vlr_movimento", "vlr"].includes(h));
@@ -82,7 +155,6 @@ export function parseCSV(content: string, bankAccountId: string): BankTransactio
 
     if (isNaN(amount)) continue;
 
-    // Parse date (DD/MM/YYYY or YYYY-MM-DD)
     let dateStr: string;
     if (rawDate.includes("/")) {
       const parts = rawDate.split("/");
@@ -104,5 +176,22 @@ export function parseCSV(content: string, bankAccountId: string): BankTransactio
     });
   }
 
-  return transactions;
+  return { transactions, detectedBank: null };
+}
+
+/**
+ * Auto-detect format and parse
+ */
+export function parseStatement(content: string, bankAccountId: string, fileName: string): ParseResult {
+  const ext = fileName.toLowerCase();
+
+  if (ext.endsWith(".ofx") || ext.endsWith(".ofc")) {
+    return parseOFX(content, bankAccountId);
+  }
+
+  if (ext.endsWith(".csv") || ext.endsWith(".txt")) {
+    return parseCSV(content, bankAccountId);
+  }
+
+  throw new Error("Formato não suportado. Use OFX ou CSV.");
 }

@@ -134,6 +134,32 @@ export const useBankTransactions = (bankAccountId?: string, month?: string) => {
     },
   });
 
+  const batchConciliate = useMutation({
+    mutationFn: async (items: { transactionId: string; withType: string; withId: string }[]) => {
+      let success = 0;
+      for (const item of items) {
+        const { error } = await supabase
+          .from("bank_transactions")
+          .update({
+            conciliated: true,
+            conciliated_with_type: item.withType,
+            conciliated_with_id: item.withId,
+            conciliated_at: new Date().toISOString(),
+          })
+          .eq("id", item.transactionId);
+        if (!error) success++;
+      }
+      return success;
+    },
+    onSuccess: (count) => {
+      queryClient.invalidateQueries({ queryKey: ["bank-transactions"] });
+      toast.success(`${count} transação(ões) conciliada(s) automaticamente!`);
+    },
+    onError: (error) => {
+      toast.error("Erro na conciliação em lote: " + error.message);
+    },
+  });
+
   const stats = {
     total: transactions?.length ?? 0,
     conciliated: transactions?.filter(t => t.conciliated).length ?? 0,
@@ -151,5 +177,7 @@ export const useBankTransactions = (bankAccountId?: string, month?: string) => {
     isImporting: importTransactions.isPending,
     conciliate: conciliate.mutate,
     unconciliate: unconciliate.mutate,
+    batchConciliate: batchConciliate.mutate,
+    isBatchConciliating: batchConciliate.isPending,
   };
 };

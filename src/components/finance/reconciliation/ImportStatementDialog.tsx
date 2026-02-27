@@ -3,8 +3,9 @@ import { Upload } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Badge } from "@/components/ui/badge";
 import { useBankAccounts } from "@/hooks/useBankAccounts";
-import { parseOFX, parseCSV } from "@/lib/bankStatementParser";
+import { parseStatement } from "@/lib/bankStatementParser";
 import type { BankTransactionInsert } from "@/hooks/useBankTransactions";
 import { toast } from "sonner";
 
@@ -22,6 +23,7 @@ export const ImportStatementDialog = ({
   const { data: bankAccounts } = useBankAccounts();
   const [accountId, setAccountId] = useState(preselectedAccountId ?? "");
   const [preview, setPreview] = useState<BankTransactionInsert[]>([]);
+  const [detectedBank, setDetectedBank] = useState<string | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
 
   const handleFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -29,25 +31,17 @@ export const ImportStatementDialog = ({
     if (!file || !accountId) return;
 
     const text = await file.text();
-    const ext = file.name.toLowerCase();
 
     try {
-      let parsed: BankTransactionInsert[];
-      if (ext.endsWith(".ofx") || ext.endsWith(".ofc")) {
-        parsed = parseOFX(text, accountId);
-      } else if (ext.endsWith(".csv") || ext.endsWith(".txt")) {
-        parsed = parseCSV(text, accountId);
-      } else {
-        toast.error("Formato não suportado. Use OFX ou CSV.");
-        return;
-      }
+      const result = parseStatement(text, accountId, file.name);
 
-      if (parsed.length === 0) {
+      if (result.transactions.length === 0) {
         toast.error("Nenhuma transação encontrada no arquivo.");
         return;
       }
 
-      setPreview(parsed);
+      setPreview(result.transactions);
+      setDetectedBank(result.detectedBank);
     } catch (err: any) {
       toast.error(err.message || "Erro ao ler arquivo");
     }
@@ -56,6 +50,7 @@ export const ImportStatementDialog = ({
   const handleConfirm = () => {
     onImport(preview);
     setPreview([]);
+    setDetectedBank(null);
     onOpenChange(false);
   };
 
@@ -66,7 +61,14 @@ export const ImportStatementDialog = ({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Importar Extrato Bancário</DialogTitle>
+          <DialogTitle className="flex items-center gap-2">
+            Importar Extrato Bancário
+            {detectedBank === "itau" && (
+              <Badge className="bg-orange-500/20 text-orange-400 border-orange-500/50">
+                Itaú Detectado
+              </Badge>
+            )}
+          </DialogTitle>
         </DialogHeader>
 
         <div className="space-y-4">
@@ -130,7 +132,7 @@ export const ImportStatementDialog = ({
           )}
 
           <div className="flex justify-end gap-2 pt-2">
-            <Button variant="outline" onClick={() => { setPreview([]); onOpenChange(false); }}>Cancelar</Button>
+            <Button variant="outline" onClick={() => { setPreview([]); setDetectedBank(null); onOpenChange(false); }}>Cancelar</Button>
             <Button onClick={handleConfirm} disabled={preview.length === 0 || isImporting}>
               <Upload className="w-4 h-4 mr-1" />
               {isImporting ? "Importando..." : `Importar ${preview.length} lançamento(s)`}
