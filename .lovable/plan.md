@@ -1,31 +1,31 @@
 
 
-# Corrigir Parser para Formato OFC (Itau)
+# Corrigir Erro de Importacao de Extrato
 
 ## Problema
 
-O arquivo enviado (`Extrato_0429_994536_27-02-2026.ofc`) usa o formato OFC 1.x, que e diferente do OFX:
-- **OFX**: usa tags com fechamento (`<STMTTRN>...</STMTTRN>`)
-- **OFC**: usa tags **sem fechamento** - cada `<STMTTRN>` delimita o inicio de uma transacao, e a proxima `<STMTTRN>` ou fim do bloco delimita o fim
-
-O parser atual usa a regex `/<STMTTRN>([\s\S]*?)<\/STMTTRN>/gi`, que exige tag de fechamento e portanto nunca encontra transacoes em arquivos OFC.
+A importacao falha com erro `"there is no unique or exclusion constraint matching the ON CONFLICT specification"` porque a coluna `import_hash` na tabela `bank_transactions` nao tem uma constraint UNIQUE aplicada corretamente no banco.
 
 ## Solucao
 
-Atualizar o parser em `src/lib/bankStatementParser.ts` para:
+Duas acoes paralelas:
 
-1. **Detectar formato OFC vs OFX**: Verificar se o conteudo tem tags de fechamento (`</STMTTRN>`) ou nao
-2. **Parser OFC dedicado**: Criar funcao `parseOFC()` que divide o conteudo por `<STMTTRN>` sem esperar tag de fechamento
-3. **Manter compatibilidade**: O parser OFX existente continua funcionando normalmente para arquivos `.ofx`
+### 1. Recriar a constraint UNIQUE no banco
+Criar nova migration SQL com:
+```sql
+CREATE UNIQUE INDEX IF NOT EXISTS bank_transactions_import_hash_unique 
+ON public.bank_transactions (import_hash) 
+WHERE import_hash IS NOT NULL;
+```
 
-## Detalhes Tecnicos
+### 2. Tornar o codigo mais resiliente (fallback)
+Alterar `useBankTransactions.ts` para que, caso o `upsert` falhe, use insert simples ignorando erros de duplicata individualmente. Isso garante que funcione mesmo sem a constraint.
 
-### Arquivo: `src/lib/bankStatementParser.ts`
+**Abordagem no codigo:**
+- Primeiro tenta `upsert` com `onConflict: "import_hash"`
+- Se falhar com erro `42P10` (no unique constraint), faz insert em lote sem `onConflict`, tratando erros de duplicata individualmente
 
-- Adicionar funcao `parseOFC()` que usa regex `/<STMTTRN>/gi` para dividir o conteudo em blocos (split por ocorrencia da tag)
-- Cada bloco e parseado extraindo `<DTPOSTED>`, `<TRNAMT>`, `<MEMO>`, `<FITID>` etc com a mesma logica de `getValue` existente
-- Na funcao `parseStatement()`, separar o tratamento de `.ofc` e `.ofx` - chamar `parseOFC()` para `.ofc` e `parseOFX()` para `.ofx`
-- Manter deteccao do Itau (`<BANKID>341`) funcionando em ambos os formatos
+### Arquivo afetado
+- `src/hooks/useBankTransactions.ts` — mutation `importTransactions`
+- Nova migration SQL para a constraint
 
-### Nenhuma mudanca de banco de dados ou credencial necessaria
-Esta correcao e puramente no parser frontend - nao requer nenhuma configuracao adicional.
