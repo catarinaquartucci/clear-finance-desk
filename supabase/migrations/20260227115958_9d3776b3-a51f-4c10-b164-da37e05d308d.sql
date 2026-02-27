@@ -1,0 +1,1 @@
+CREATE UNIQUE INDEX IF NOT EXISTS bank_transactions_import_hash_unique ON public.bank_transactions (import_hash) WHERE import_hash IS NOT NULL;
