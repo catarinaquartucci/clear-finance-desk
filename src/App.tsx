@@ -25,6 +25,7 @@ import AdminDashboard from "./pages/admin/AdminDashboard";
 import AdminColaboradores from "./pages/admin/AdminColaboradores";
 import AdminEquipamentos from "./pages/admin/AdminEquipamentos";
 import AdminAutomacoes from "./pages/admin/AdminAutomacoes";
+import AdminConfiguracoes from "./pages/admin/AdminConfiguracoes";
 
 // Finance pages
 import Planejamento from "./pages/financeiro/Planejamento";
@@ -82,6 +83,7 @@ const App = () => (
                     <Route path="colaboradores" element={<AdminColaboradores />} />
                     <Route path="equipamentos" element={<AdminEquipamentos />} />
                     <Route path="automacoes" element={<AdminAutomacoes />} />
+                    <Route path="configuracoes" element={<AdminConfiguracoes />} />
                   </Route>
 
                   {/* Finance Module Routes */}

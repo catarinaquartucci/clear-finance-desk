@@ -1034,6 +1034,39 @@ export type Database = {
           },
         ]
       }
+      group_companies: {
+        Row: {
+          active: boolean
+          created_at: string
+          document: string | null
+          id: string
+          legal_name: string | null
+          name: string
+          type: string
+          updated_at: string
+        }
+        Insert: {
+          active?: boolean
+          created_at?: string
+          document?: string | null
+          id?: string
+          legal_name?: string | null
+          name: string
+          type?: string
+          updated_at?: string
+        }
+        Update: {
+          active?: boolean
+          created_at?: string
+          document?: string | null
+          id?: string
+          legal_name?: string | null
+          name?: string
+          type?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       invoices: {
         Row: {
           amount: number
@@ -2045,6 +2078,33 @@ export type Database = {
           name?: string
           pix_key?: string | null
           updated_at?: string
+        }
+        Relationships: []
+      }
+      system_settings: {
+        Row: {
+          category: string
+          id: string
+          key: string
+          updated_at: string
+          updated_by: string | null
+          value: Json
+        }
+        Insert: {
+          category?: string
+          id?: string
+          key: string
+          updated_at?: string
+          updated_by?: string | null
+          value?: Json
+        }
+        Update: {
+          category?: string
+          id?: string
+          key?: string
+          updated_at?: string
+          updated_by?: string | null
+          value?: Json
         }
         Relationships: []
       }

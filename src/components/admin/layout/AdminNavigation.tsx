@@ -1,12 +1,13 @@
 import { Link, useLocation } from "react-router-dom";
 import { cn } from "@/lib/utils";
-import { CheckCircle, Users, Monitor, Zap } from "lucide-react";
+import { CheckCircle, Users, Monitor, Zap, Settings } from "lucide-react";
 
 const adminNavItems = [
   { icon: CheckCircle, label: "Aprovações", path: "/admin/aprovacoes" },
   { icon: Users, label: "Colaboradores", path: "/admin/colaboradores" },
   { icon: Monitor, label: "Equipamentos", path: "/admin/equipamentos" },
   { icon: Zap, label: "Automações", path: "/admin/automacoes" },
+  { icon: Settings, label: "Configurações", path: "/admin/configuracoes" },
 ];
 
 export const AdminNavigation = () => {
