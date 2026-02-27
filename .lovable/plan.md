@@ -1,113 +1,87 @@
 
 
-# Remover Devolucao + Novo Modulo de Relatorios Avancados
+# Dashboard Financeiro - Pagina Inicial do Modulo Financas
 
-## 1. Remover aba "Devolucao" da pagina Solicitacoes
+## Resumo
 
-**Arquivo**: `src/pages/Solicitacoes.tsx`
-- Remover a tab "Devolucao" e seu conteudo (`DevolucaoForm`)
-- Remover import de `DevolucaoForm` e `TrendingUp`
-- Ajustar grid de tabs de 4 para 3 colunas
-- Na aba "Minhas Solicitacoes", remover `MyDevolucoesList`
-
-**Arquivo**: `src/pages/admin/AdminDashboard.tsx`
-- Remover o AccordionItem de "Devoluções" e imports relacionados (`DevolucoesList`, `useDevolucoes`)
+Criar uma pagina de dashboard como tela inicial do modulo financeiro (`/financeiro/dashboard`), substituindo o redirecionamento atual para "Cadastros". A pagina exibira KPI cards com os principais indicadores e graficos interativos usando dados reais de contas a pagar, receber e centros de custo.
 
 ---
 
-## 2. Reformular pagina de Relatorios Financeiros
+## O que sera criado
 
-**Arquivo**: `src/pages/financeiro/Relatorios.tsx` - Reescrever com novas abas
+### 1. Pagina `src/pages/financeiro/FinanceDashboard.tsx`
 
-### Novas abas:
+Dashboard com as seguintes secoes:
 
-| Aba | Descricao | Filtros |
-|-----|-----------|---------|
-| Contas a Pagar | Listagem de payables com status open/overdue | Periodo (de-ate) + Filial |
-| Contas a Receber | Listagem de receivables com status open/overdue | Periodo (de-ate) + Filial |
-| Contas Pagas | Payables ja pagos com data de pagamento | Periodo (de-ate) + Filial |
-| Gastos por Centro de Custo | Dashboard com grafico de pizza/barras + tabela | Periodo + Filial |
-| DRE | Mantido como esta | Ano |
-| Aging | Mantido como esta | - |
+**KPI Cards (linha superior - 6 cards):**
+- Receita Total (receivables com status received)
+- Despesa Total (payables com status paid)
+- Geracao de Caixa (receita - despesa)
+- Margem Liquida (%)
+- Atingimento de Meta (% vs meta configurada)
+- Saldo Final
 
-### Componentes novos:
+**Graficos:**
+- Receitas x Despesas mensal (BarChart com recharts, 12 meses do ano atual)
+- Distribuicao por Centro de Custo (PieChart)
+- Contas vencidas vs em dia (cards de alerta)
+- Ultimas movimentacoes (tabela resumida com as 5 mais recentes)
 
-- `src/components/finance/reports/PayablesReport.tsx` - Tabela de contas a pagar com filtros de periodo e filial, botoes de exportar Excel e PDF
-- `src/components/finance/reports/ReceivablesReport.tsx` - Tabela de contas a receber com filtros
-- `src/components/finance/reports/PaidReport.tsx` - Contas pagas com data de pagamento
-- `src/components/finance/reports/CostCenterDashboard.tsx` - Dashboard com grafico de rosca (recharts PieChart) mostrando distribuicao de gastos por centro de custo + tabela detalhada
-- `src/components/finance/reports/ReportFilters.tsx` - Componente reutilizavel com DatePicker "De" e "Ate" + CompanyFilter + botoes de exportar
+### 2. Hook `src/hooks/useDashboardFinance.ts`
 
-### Exportacao:
+Hook dedicado que busca dados agregados para o dashboard:
+- Total de payables por status (open, overdue, paid)
+- Total de receivables por status
+- Dados mensais para o grafico de barras (reutiliza logica de `useMonthlyFlowReport`)
+- Dados de centro de custo (reutiliza logica de `useCostCenterDashboard`)
+- Ultimas transacoes (5 payables + 5 receivables mais recentes)
 
-- **Excel**: Usar biblioteca `xlsx` (ja instalada) para gerar planilhas
-- **PDF**: Gerar via `window.print()` com CSS de impressao dedicado, ou criar uma funcao que monta uma tabela HTML e abre em nova janela para imprimir como PDF
+### 3. Componentes visuais
+
+- `src/components/finance/dashboard/FinancialKPICards.tsx` - Grid de 6 KPI cards
+- `src/components/finance/dashboard/RevenueExpenseChart.tsx` - Grafico de barras Receitas x Despesas
+- `src/components/finance/dashboard/RecentTransactions.tsx` - Tabela das ultimas movimentacoes (ja existe, sera reutilizado/ajustado)
+
+### 4. Alteracoes em arquivos existentes
+
+**`src/App.tsx`:**
+- Importar `FinanceDashboard`
+- Alterar redirect index de `cadastros` para `dashboard`
+- Adicionar rota `<Route path="dashboard" element={<FinanceDashboard />} />`
+
+**`src/components/finance/layout/FinanceNavigation.tsx`:**
+- Adicionar item "Dashboard" como primeiro item da navegacao com icone `LayoutDashboard`
 
 ---
 
-## 3. Dashboards e Relatorios Sugeridos (incluidos na implementacao)
+## Detalhes Tecnicos
 
-Alem dos solicitados, incluir as seguintes abas extras no modulo de Relatorios:
-
-1. **Fluxo Mensal** - Grafico de barras comparando receitas vs despesas mes a mes (usando dados de payables/receivables agrupados por mes). Filtro por ano e filial.
-
-2. **Top Fornecedores** - Ranking dos maiores fornecedores por valor pago, com grafico de barras horizontal. Filtro por periodo e filial.
-
-3. **Resumo Executivo** - Card com KPIs: total a pagar, total a receber, saldo liquido, taxa de inadimplencia, ticket medio. Exportavel em PDF como relatorio executivo de uma pagina.
-
-Estes serao adicionados como abas extras no mesmo componente de Relatorios.
-
----
-
-## 4. Detalhes Tecnicos
-
-### Hooks atualizados/novos:
-
-**`src/hooks/useFinancialReports.ts`** - Adicionar novos hooks:
-- `usePayablesReport(dateFrom, dateTo, companyId)` - Busca payables com joins em suppliers e cost_centers, filtrando por periodo e company_id
-- `useReceivablesReport(dateFrom, dateTo, companyId)` - Idem para receivables com join em customers
-- `usePaidReport(dateFrom, dateTo, companyId)` - Payables com status "paid", usando paid_date como filtro de periodo
-- `useCostCenterDashboard(dateFrom, dateTo, companyId)` - Agrupa payables por cost_center_id, retorna totais para grafico
-- `useMonthlyFlowReport(year, companyId)` - Agrupa receitas e despesas por mes
-- `useExecutiveSummary(dateFrom, dateTo, companyId)` - Calcula KPIs agregados
-
-### Exportacao Excel (usando xlsx):
+### Hook useDashboardFinance
 
 ```typescript
-import * as XLSX from "xlsx";
-
-function exportToExcel(data: any[], filename: string) {
-  const ws = XLSX.utils.json_to_sheet(data);
-  const wb = XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(wb, ws, "Relatório");
-  XLSX.writeFile(wb, `${filename}.xlsx`);
-}
+// Busca paralela de payables e receivables do ano atual
+// Agrega por mes para grafico de barras
+// Calcula KPIs: totais, margens, vencidos
+// Retorna { kpis, monthlyData, costCenterData, recentItems, isLoading }
 ```
 
-### Exportacao PDF:
+### KPI Cards
 
-Criar funcao `exportToPDF` que monta HTML com estilos inline, abre em nova janela e chama `window.print()`.
+Usa o componente Card existente com icones do lucide-react e cores condicionais (verde para positivo, vermelho para negativo).
 
-### Arquivos modificados:
+### Grafico Receitas x Despesas
 
-- `src/pages/Solicitacoes.tsx` - Remover tab devolucao
-- `src/pages/admin/AdminDashboard.tsx` - Remover secao devoluções
-- `src/pages/financeiro/Relatorios.tsx` - Reescrever com todas as novas abas
-- `src/hooks/useFinancialReports.ts` - Adicionar novos hooks
+Utiliza `recharts` (BarChart) com dois bars: Receitas (verde) e Despesas (vermelho), agrupados por mes.
 
-### Arquivos novos:
+### Filtro por filial
 
-- `src/components/finance/reports/ReportFilters.tsx`
-- `src/components/finance/reports/PayablesReport.tsx`
-- `src/components/finance/reports/ReceivablesReport.tsx`
-- `src/components/finance/reports/PaidReport.tsx`
-- `src/components/finance/reports/CostCenterDashboard.tsx`
-- `src/components/finance/reports/MonthlyFlowChart.tsx`
-- `src/components/finance/reports/TopSuppliersChart.tsx`
-- `src/components/finance/reports/ExecutiveSummary.tsx`
-- `src/lib/exportUtils.ts` - Funcoes utilitarias de exportacao (Excel + PDF)
+Inclui o `CompanyFilter` existente no topo do dashboard para filtrar todos os dados por empresa/filial.
 
-### Nenhuma mudanca no banco de dados
+### Sequencia de implementacao
 
-Todos os dados ja existem nas tabelas `payables`, `receivables`, `suppliers`, `customers`, `cost_centers`. Os novos relatorios sao consultas com filtros sobre dados existentes.
-
+1. Criar hook `useDashboardFinance.ts`
+2. Criar componentes `FinancialKPICards.tsx` e `RevenueExpenseChart.tsx`
+3. Criar pagina `FinanceDashboard.tsx`
+4. Atualizar `FinanceNavigation.tsx` (adicionar item Dashboard)
+5. Atualizar `App.tsx` (rota + redirect)
