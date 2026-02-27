@@ -60,19 +60,39 @@ export const useBankTransactions = (bankAccountId?: string, month?: string) => {
 
   const importTransactions = useMutation({
     mutationFn: async (rows: BankTransactionInsert[]) => {
-      // Insert in batches, skip duplicates via import_hash unique index
       const batchSize = 100;
       let inserted = 0;
       let skipped = 0;
 
       for (let i = 0; i < rows.length; i += batchSize) {
         const batch = rows.slice(i, i + batchSize);
+        
+        // Try upsert first (requires unique index on import_hash)
         const { data, error } = await supabase
           .from("bank_transactions")
           .upsert(batch, { onConflict: "import_hash", ignoreDuplicates: true })
           .select();
-        if (error) throw error;
-        inserted += data?.length ?? 0;
+        
+        if (error) {
+          // Fallback: if no unique constraint, insert one by one ignoring duplicates
+          if (error.code === "42P10" || error.message?.includes("ON CONFLICT")) {
+            for (const row of batch) {
+              const { data: single, error: singleErr } = await supabase
+                .from("bank_transactions")
+                .insert(row)
+                .select();
+              if (!singleErr && single) {
+                inserted += single.length;
+              } else {
+                skipped++;
+              }
+            }
+          } else {
+            throw error;
+          }
+        } else {
+          inserted += data?.length ?? 0;
+        }
       }
       skipped = rows.length - inserted;
       return { inserted, skipped };
