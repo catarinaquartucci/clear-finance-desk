@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { useState, useEffect } from "react";
 
 export interface EquipamentoFoto {
   id: string;
@@ -14,6 +15,7 @@ export interface EquipamentoFoto {
 
 export const useEquipamentoFotos = (equipamentoId: string | undefined) => {
   const queryClient = useQueryClient();
+  const [photoUrls, setPhotoUrls] = useState<Record<string, string>>({});
 
   const { data: fotos = [], isLoading } = useQuery({
     queryKey: ["equipamento-fotos", equipamentoId],
@@ -32,6 +34,30 @@ export const useEquipamentoFotos = (equipamentoId: string | undefined) => {
     enabled: !!equipamentoId,
   });
 
+  // Pre-resolve signed URLs for all fotos
+  useEffect(() => {
+    if (fotos.length === 0) return;
+    
+    const resolveUrls = async () => {
+      const urls: Record<string, string> = {};
+      for (const foto of fotos) {
+        if (photoUrls[foto.arquivo_url]) {
+          urls[foto.arquivo_url] = photoUrls[foto.arquivo_url];
+          continue;
+        }
+        const { data } = await supabase.storage
+          .from("equipamentos-fotos")
+          .createSignedUrl(foto.arquivo_url, 3600);
+        if (data?.signedUrl) {
+          urls[foto.arquivo_url] = data.signedUrl;
+        }
+      }
+      setPhotoUrls(urls);
+    };
+    
+    resolveUrls();
+  }, [fotos]);
+
   const uploadFoto = useMutation({
     mutationFn: async ({
       file,
@@ -45,21 +71,17 @@ export const useEquipamentoFotos = (equipamentoId: string | undefined) => {
       const { data: userData } = await supabase.auth.getUser();
       const userId = userData.user?.id;
 
-      // Gerar nome único para o arquivo
       const fileExt = file.name.split(".").pop();
       const fileName = `${equipamentoId}/${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
 
-      // Upload para o storage
       const { error: uploadError } = await supabase.storage
         .from("equipamentos-fotos")
         .upload(fileName, file);
 
       if (uploadError) throw uploadError;
 
-      // Obter próxima ordem
       const maxOrdem = fotos.reduce((max, foto) => Math.max(max, foto.ordem || 0), 0);
 
-      // Registrar no banco
       const { data, error } = await supabase
         .from("equipamento_fotos")
         .insert({
@@ -87,7 +109,6 @@ export const useEquipamentoFotos = (equipamentoId: string | undefined) => {
 
   const deleteFoto = useMutation({
     mutationFn: async (foto: EquipamentoFoto) => {
-      // Deletar do storage
       const { error: storageError } = await supabase.storage
         .from("equipamentos-fotos")
         .remove([foto.arquivo_url]);
@@ -96,7 +117,6 @@ export const useEquipamentoFotos = (equipamentoId: string | undefined) => {
         console.error("Erro ao deletar do storage:", storageError);
       }
 
-      // Deletar do banco
       const { error } = await supabase
         .from("equipamento_fotos")
         .delete()
@@ -114,11 +134,8 @@ export const useEquipamentoFotos = (equipamentoId: string | undefined) => {
     },
   });
 
-  const getPhotoUrl = (arquivoUrl: string) => {
-    const { data } = supabase.storage
-      .from("equipamentos-fotos")
-      .getPublicUrl(arquivoUrl);
-    return data.publicUrl;
+  const getPhotoUrl = (arquivoUrl: string): string => {
+    return photoUrls[arquivoUrl] || "";
   };
 
   return {
