@@ -1,1 +1,16 @@
 project_id = "wbrwqyjtlpsrcpevszlh"
+
+[functions.cleanup-colaboradores]
+verify_jwt = false
+
+[functions.discord-notify]
+verify_jwt = false
+
+[functions.discord-daily-report]
+verify_jwt = false
+
+[functions.google-drive-export]
+verify_jwt = false
+
+[functions.marvee-sync]
+verify_jwt = false
