@@ -39,6 +39,30 @@ Deno.serve(async (req) => {
       }
     });
 
+    // === AUTH CHECK: require admin role ===
+    const authHeader = req.headers.get('Authorization');
+    if (!authHeader?.startsWith('Bearer ')) {
+      return new Response(JSON.stringify({ error: 'Não autorizado' }), {
+        status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+    const token = authHeader.replace('Bearer ', '');
+    const { data: claimsData, error: claimsError } = await supabase.auth.getClaims(token);
+    if (claimsError || !claimsData?.claims) {
+      return new Response(JSON.stringify({ error: 'Token inválido' }), {
+        status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+    const callerId = claimsData.claims.sub;
+    const { data: roleData } = await supabase
+      .from('user_roles').select('role').eq('user_id', callerId).eq('role', 'admin').maybeSingle();
+    if (!roleData) {
+      return new Response(JSON.stringify({ error: 'Acesso negado' }), {
+        status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+    // === END AUTH CHECK ===
+
     const { colaboradores } = await req.json() as { colaboradores: ColaboradorImport[] };
 
     if (!colaboradores || !Array.isArray(colaboradores)) {
