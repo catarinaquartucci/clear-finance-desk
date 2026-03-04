@@ -1,8 +1,7 @@
 import { Download } from "lucide-react";
-import * as XLSX from "xlsx";
+import ExcelJS from "exceljs";
 import { Button } from "@/components/ui/button";
 import { CashFlowRow, StatusFilter } from "@/hooks/useCashFlowData";
-import { formatCurrency } from "@/lib/taxCalculations";
 
 interface CashFlowExportButtonProps {
   rows: CashFlowRow[];
@@ -22,7 +21,7 @@ export const CashFlowExportButton = ({
   year,
   statusFilter,
 }: CashFlowExportButtonProps) => {
-  const handleExport = () => {
+  const handleExport = async () => {
     const exportData: Record<string, string | number>[] = [];
 
     const flattenRows = (rowList: CashFlowRow[], level = 0) => {
@@ -62,27 +61,34 @@ export const CashFlowExportButton = ({
 
     flattenRows(rows);
 
-    const worksheet = XLSX.utils.json_to_sheet(exportData);
-    const workbook = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(workbook, worksheet, "Fluxo de Caixa");
+    const workbook = new ExcelJS.Workbook();
+    const worksheet = workbook.addWorksheet("Fluxo de Caixa");
 
-    // Ajustar largura das colunas
-    const colWidths = [{ wch: 40 }];
-    months.forEach(() => {
-      if (statusFilter === "both") {
-        colWidths.push({ wch: 15 }, { wch: 15 });
-      } else {
-        colWidths.push({ wch: 15 });
+    if (exportData.length > 0) {
+      const headers = Object.keys(exportData[0]);
+      worksheet.addRow(headers);
+      const headerRow = worksheet.getRow(1);
+      headerRow.font = { bold: true };
+
+      exportData.forEach((row) => {
+        worksheet.addRow(headers.map((h) => row[h]));
+      });
+
+      // Set column widths
+      worksheet.getColumn(1).width = 40;
+      for (let i = 2; i <= headers.length; i++) {
+        worksheet.getColumn(i).width = 15;
       }
-    });
-    if (statusFilter === "both") {
-      colWidths.push({ wch: 15 }, { wch: 15 });
-    } else {
-      colWidths.push({ wch: 15 });
     }
-    worksheet["!cols"] = colWidths;
 
-    XLSX.writeFile(workbook, `fluxo_caixa_${year}.xlsx`);
+    const buffer = await workbook.xlsx.writeBuffer();
+    const blob = new Blob([buffer], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `fluxo_caixa_${year}.xlsx`;
+    a.click();
+    URL.revokeObjectURL(url);
   };
 
   return (
