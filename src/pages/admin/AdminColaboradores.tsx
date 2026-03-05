@@ -15,7 +15,7 @@ const AdminColaboradores = () => {
   const { canEditAdmin } = useAuth();
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [showImportDialog, setShowImportDialog] = useState(false);
-  const { colaboradores, createColaborador, isCreating, importColaboradores, isImporting } = useColaboradores();
+  const { colaboradores, createColaborador, isCreating, importColaboradores, isImporting, restoreColaboradores, isRestoring } = useColaboradores();
   const { colaboradoresFilters, setColaboradoresFilter } = useAppPreferences();
 
   // Extract filters from context
@@ -223,7 +223,8 @@ const AdminColaboradores = () => {
         open={showImportDialog}
         onOpenChange={setShowImportDialog}
         onImport={importColaboradores}
-        isImporting={isImporting}
+        onRestore={restoreColaboradores}
+        isImporting={isImporting || isRestoring}
       />
     </div>
   );

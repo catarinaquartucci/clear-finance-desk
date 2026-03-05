@@ -10,6 +10,8 @@ import * as XLSX from "xlsx";
 
 // Tipo para dados do colaborador da planilha
 export interface ColaboradorImport {
+  id?: string;
+  user_id?: string;
   nome?: string;
   email?: string;
   cpf?: string;
@@ -25,6 +27,10 @@ export interface ColaboradorImport {
   data_nascimento?: string;
   is_admin?: boolean;
   ativo?: boolean;
+  has_finance_access?: boolean;
+  has_finance_view_access?: boolean;
+  has_admin_view_access?: boolean;
+  endereco?: string;
 }
 
 // Mapeamento de colunas da planilha para campos do sistema
@@ -107,19 +113,30 @@ const COLUMN_MAPPING: Record<string, keyof ColaboradorImport> = {
   "ativo": "ativo",
   "status": "ativo",
   "ativo?": "ativo",
+  // Campos extras para restauração
+  "id": "id" as any,
+  "user_id": "user_id" as any,
+  "endereco": "endereco" as any,
+  "endereço": "endereco" as any,
+  "has_finance_access": "has_finance_access" as any,
+  "acesso financeiro": "has_finance_access" as any,
+  "has_finance_view_access": "has_finance_view_access" as any,
+  "has_admin_view_access": "has_admin_view_access" as any,
 };
 
 interface ImportColaboradoresDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onImport: (colaboradores: ColaboradorImport[]) => Promise<{ results: ImportResult[]; sucessos: number; falhas: number }>;
+  onRestore?: (colaboradores: ColaboradorImport[]) => Promise<{ results: ImportResult[]; sucessos: number; falhas: number }>;
   isImporting: boolean;
 }
 
 export const ImportColaboradoresDialog = ({ 
   open, 
   onOpenChange, 
-  onImport, 
+  onImport,
+  onRestore,
   isImporting 
 }: ImportColaboradoresDialogProps) => {
   const [results, setResults] = useState<ImportResult[] | null>(null);
@@ -227,13 +244,13 @@ export const ImportColaboradoresDialog = ({
                 }
                 
                 colaborador[mappedField] = isNaN(numValue) ? 0 : numValue;
-              } else if (mappedField === "is_admin" || mappedField === "ativo") {
+              } else if (mappedField === "is_admin" || mappedField === "ativo" || mappedField === "has_finance_access" || mappedField === "has_finance_view_access" || mappedField === "has_admin_view_access") {
                 // Converter para boolean
-                colaborador[mappedField] = value === true || value === "true" || value === "sim" || value === "1" || value === "Sim";
+                (colaborador as any)[mappedField] = value === true || value === "true" || value === "TRUE" || value === "sim" || value === "1" || value === "Sim";
               } else if (mappedField === "data_inicio_contrato" || mappedField === "data_nascimento" || mappedField === "data_fim_contrato") {
                 colaborador[mappedField] = parseExcelDate(value);
               } else {
-                colaborador[mappedField] = String(value || "").trim();
+                (colaborador as any)[mappedField] = String(value || "").trim();
               }
             }
           });
@@ -247,6 +264,8 @@ export const ImportColaboradoresDialog = ({
             const dataFimPreenchida = colaborador.data_fim_contrato && colaborador.data_fim_contrato.trim() !== "";
             
             parsed.push({
+              id: (colaborador as any).id,
+              user_id: (colaborador as any).user_id,
               nome: colaborador.nome || "",
               email: colaborador.email || "",
               cpf: colaborador.cpf || "",
@@ -262,6 +281,10 @@ export const ImportColaboradoresDialog = ({
               data_nascimento: colaborador.data_nascimento,
               is_admin: colaborador.is_admin,
               ativo: dataFimPreenchida ? false : (colaborador.ativo ?? true),
+              has_finance_access: (colaborador as any).has_finance_access,
+              has_finance_view_access: (colaborador as any).has_finance_view_access,
+              has_admin_view_access: (colaborador as any).has_admin_view_access,
+              endereco: (colaborador as any).endereco,
             });
           }
         });
@@ -309,9 +332,16 @@ export const ImportColaboradoresDialog = ({
     }
   };
 
+  const isRestoreMode = colaboradores.some(c => c.id);
+
   const handleImport = async () => {
     try {
-      const response = await onImport(colaboradores);
+      let response;
+      if (isRestoreMode && onRestore) {
+        response = await onRestore(colaboradores);
+      } else {
+        response = await onImport(colaboradores);
+      }
       setResults(response.results);
       setShowResults(true);
     } catch (error) {
@@ -333,7 +363,7 @@ export const ImportColaboradoresDialog = ({
       <DialogContent className="max-w-4xl max-h-[90vh]">
         <DialogHeader>
           <DialogTitle>
-            {showResults ? "Resultado da Importação" : "Importar Colaboradores"}
+            {showResults ? "Resultado da Importação" : isRestoreMode ? "Restaurar Colaboradores" : "Importar Colaboradores"}
           </DialogTitle>
           <DialogDescription>
             {showResults 
@@ -502,7 +532,7 @@ export const ImportColaboradoresDialog = ({
                     Importando...
                   </>
                 ) : (
-                  <>Importar {colaboradores.length} Colaboradores</>
+                  <>{isRestoreMode ? "Restaurar" : "Importar"} {colaboradores.length} Colaboradores</>
                 )}
               </Button>
             </div>
