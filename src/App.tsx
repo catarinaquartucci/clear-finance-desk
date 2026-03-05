@@ -123,15 +123,15 @@ const App = () => (
                   </Route>
                   
                   <Route path="*" element={<NotFound />} />
-                </Routes>
-                </Suspense>
-              </BrowserRouter>
-            </TooltipProvider>
-          </AppPreferencesProvider>
-        </DuplicateProvider>
-      </AuthProvider>
-    </ThemeProvider>
-  </QueryClientProvider>
+                    </Routes>
+                  </Suspense>
+                </BrowserRouter>
+              </TooltipProvider>
+            </AppPreferencesProvider>
+          </DuplicateProvider>
+        </AuthProvider>
+      </ThemeProvider>
+    </QueryClientProvider>
   </ErrorBoundary>
 );
 
