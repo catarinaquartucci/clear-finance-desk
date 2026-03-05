@@ -1,6 +1,6 @@
 import { useState, useMemo } from "react";
 import { Plus, Users, UserCheck, Shield, Upload, DollarSign, Download } from "lucide-react";
-import * as XLSX from "xlsx";
+import { toast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { ColaboradorForm } from "@/components/Colaboradores/ColaboradorForm";
@@ -73,7 +73,15 @@ const AdminColaboradores = () => {
     return filteredColaboradores.reduce((sum, c) => sum + (c.remuneracao || 0), 0);
   }, [filteredColaboradores]);
 
-  const handleExportExcel = () => {
+  const handleExportExcel = async () => {
+    let XLSX: any;
+    try {
+      XLSX = await import("xlsx");
+    } catch {
+      toast({ title: "Erro", description: "Não foi possível carregar módulo de planilha. Tente novamente.", variant: "destructive" });
+      return;
+    }
+
     const formatDate = (dateStr: string | null) => {
       if (!dateStr) return "";
       const date = new Date(dateStr);

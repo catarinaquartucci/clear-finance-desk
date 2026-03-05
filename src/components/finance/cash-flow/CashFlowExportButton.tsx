@@ -1,8 +1,8 @@
 import { Download } from "lucide-react";
-import * as XLSX from "xlsx";
 import { Button } from "@/components/ui/button";
 import { CashFlowRow, StatusFilter } from "@/hooks/useCashFlowData";
 import { formatCurrency } from "@/lib/taxCalculations";
+import { toast } from "@/hooks/use-toast";
 
 interface CashFlowExportButtonProps {
   rows: CashFlowRow[];
@@ -22,7 +22,15 @@ export const CashFlowExportButton = ({
   year,
   statusFilter,
 }: CashFlowExportButtonProps) => {
-  const handleExport = () => {
+  const handleExport = async () => {
+    let XLSX: any;
+    try {
+      XLSX = await import("xlsx");
+    } catch {
+      toast({ title: "Erro", description: "Não foi possível carregar módulo de planilha. Tente novamente.", variant: "destructive" });
+      return;
+    }
+
     const exportData: Record<string, string | number>[] = [];
 
     const flattenRows = (rowList: CashFlowRow[], level = 0) => {
@@ -66,7 +74,6 @@ export const CashFlowExportButton = ({
     const workbook = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(workbook, worksheet, "Fluxo de Caixa");
 
-    // Ajustar largura das colunas
     const colWidths = [{ wch: 40 }];
     months.forEach(() => {
       if (statusFilter === "both") {
