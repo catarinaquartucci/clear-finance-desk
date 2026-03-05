@@ -1,38 +1,79 @@
+# Despesas Recorrentes - Gerador Automatico de Contas a Pagar
 
+## O que sera criado
 
-## Plan: Google Login na Solicitações + Restrição de Domínio @vantari.com.br
+Uma funcionalidade de "Despesas Recorrentes" que permite cadastrar uma despesa uma unica vez e gerar automaticamente as contas a pagar para os proximos meses desejados.
 
-### Problema
-Atualmente, o login via Google está disponível apenas na página `/auth`. O usuário quer que colaboradores do domínio `@vantari.com.br` possam fazer login via Google diretamente na página de Solicitações (ou ser redirecionados para lá após login).
+Permitir edição de contas já cadastradas para que tenham essa mesma opção
 
-### Mudanças
+---
 
-**1. Restringir Google OAuth ao domínio @vantari.com.br**
-- No `Auth.tsx`, adicionar o parâmetro `hd: "vantari.com.br"` ao `lovable.auth.signInWithOAuth("google")` para que apenas contas do Google Workspace desse domínio possam fazer login.
+## Como vai funcionar
 
-**2. Redirecionar login Google para /solicitacoes**
-- No `Auth.tsx`, alterar o `redirect_uri` do Google OAuth para `window.location.origin + "/solicitacoes"` (ou manter `window.location.origin` e ajustar o redirect pós-login no `useEffect`).
-- Ajustar o `useEffect` de redirect no `Auth.tsx`: quando o usuário NÃO for admin, redirecionar para `/solicitacoes` (já faz isso, mas garantir que funcione após Google OAuth).
+1. Na tela de **Contas a Pagar**, um novo botao "Despesa Recorrente" abre um formulario especial
+2. O usuario preenche os dados da despesa (descricao, valor, fornecedor, centro de custo, etc.)
+3. Define a **recorrencia**: mensal, e por quantos meses (ex: 12 meses)
+4. Define o **dia do vencimento** (ex: dia 10 de cada mes)
+5. Ao salvar, o sistema gera todas as contas a pagar de uma vez, com as datas de vencimento corretas
 
-**3. Adicionar botão Google Login na página Solicitações (quando não logado)**
-- A página Solicitações é protegida pelo `ProtectedRoute`, que redireciona para `/auth` se não logado. Portanto, não é necessário adicionar botão na própria página -- o fluxo natural já redireciona para `/auth`.
-- Alternativa: Se o objetivo é ter um botão Google na própria tela de Solicitações, modificar o `ProtectedRoute` para mostrar um card de login inline com botão Google ao invés de redirecionar.
+Isso elimina a necessidade de cadastrar um por um.
 
-### Arquivos Modificados
-- `src/pages/Auth.tsx` -- Adicionar `hd: "vantari.com.br"` e `prompt: "select_account"` ao Google OAuth
-- `src/components/Auth/ProtectedRoute.tsx` -- (Opcional) Mostrar tela de login com Google inline para rotas de colaborador
+---
 
-### Detalhes Técnicos
-```typescript
-// Auth.tsx - Google OAuth com restrição de domínio
-await lovable.auth.signInWithOAuth("google", {
-  redirect_uri: window.location.origin,
-  extraParams: {
-    hd: "vantari.com.br",
-    prompt: "select_account",
-  },
-});
+## Mudancas Tecnicas
+
+### 1. Nova tabela `recurring_expenses`
+
+Armazena o modelo da despesa recorrente para referencia futura.
+
+```text
+Campos:
+- id, description, amount, supplier_id, cost_center_id, bank_account_id
+- company_id, payment_method, chart_account_id
+- frequency (mensal)
+- day_of_month (dia do vencimento)
+- start_date, end_date (periodo de vigencia)
+- active (pode pausar/reativar)
+- created_at, updated_at
 ```
 
-O parâmetro `hd` restringe a seleção de conta Google ao domínio especificado. O `prompt: "select_account"` garante que o usuário sempre possa escolher qual conta usar.
+RLS: Acesso para admin e finance (mesmo padrao de payables).
 
+### 2. Componente `RecurringExpenseForm.tsx`
+
+Novo dialog com os mesmos campos do `PayableForm` + campos extras:
+
+- Dia do vencimento (1-28)
+- Quantidade de meses OU data final
+- Preview mostrando as datas que serao geradas
+
+### 3. Logica de geracao em lote
+
+Ao salvar, o sistema:
+
+- Cria o registro na tabela `recurring_expenses` (modelo)
+- Gera N registros na tabela `payables` existente, um para cada mes, com `recurring_expense_id` como referencia
+
+### 4. Coluna extra na tabela `payables`
+
+Adicionar `recurring_expense_id` (uuid, nullable) para rastrear quais contas vieram de uma recorrencia.
+
+### 5. Alteracoes na interface
+
+`**PayablesList.tsx`:**
+
+- Novo botao "Despesa Recorrente" ao lado de "Nova Conta"
+- Badge "Recorrente" nas contas geradas por recorrencia
+
+**Novo componente `RecurringExpenseForm.tsx`:**
+
+- Formulario com campos da despesa + configuracao de recorrencia
+- Preview das datas antes de confirmar
+- Botao "Gerar X contas"
+
+### 6. Arquivos envolvidos
+
+- **Novo**: `src/components/finance/payables/RecurringExpenseForm.tsx`
+- **Modificado**: `src/components/finance/payables/PayablesList.tsx` (botao + badge)
+- **Modificado**: `src/hooks/usePayables.ts` (funcao para criar em lote)
+- **Migracao**: Criar tabela `recurring_expenses` + coluna `recurring_expense_id` em `payables`
