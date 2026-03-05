@@ -305,13 +305,10 @@ export const ImportColaboradoresDialog = ({
 
         setParseErrors(errors);
         setColaboradores(parsed);
-      } catch (error) {
-        console.error("Erro ao processar arquivo:", error);
-        setParseErrors(["Erro ao processar arquivo. Verifique se é um arquivo Excel ou CSV válido."]);
-      }
-    };
-
-    reader.readAsArrayBuffer(file);
+    } catch (error) {
+      console.error("Erro ao processar arquivo:", error);
+      setParseErrors(["Erro ao processar arquivo. Verifique se é um arquivo Excel ou CSV válido."]);
+    }
   }, []);
 
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
