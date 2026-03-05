@@ -244,13 +244,13 @@ export const ImportColaboradoresDialog = ({
                 }
                 
                 colaborador[mappedField] = isNaN(numValue) ? 0 : numValue;
-              } else if (mappedField === "is_admin" || mappedField === "ativo") {
+              } else if (mappedField === "is_admin" || mappedField === "ativo" || mappedField === "has_finance_access" || mappedField === "has_finance_view_access" || mappedField === "has_admin_view_access") {
                 // Converter para boolean
-                colaborador[mappedField] = value === true || value === "true" || value === "sim" || value === "1" || value === "Sim";
+                (colaborador as any)[mappedField] = value === true || value === "true" || value === "TRUE" || value === "sim" || value === "1" || value === "Sim";
               } else if (mappedField === "data_inicio_contrato" || mappedField === "data_nascimento" || mappedField === "data_fim_contrato") {
                 colaborador[mappedField] = parseExcelDate(value);
               } else {
-                colaborador[mappedField] = String(value || "").trim();
+                (colaborador as any)[mappedField] = String(value || "").trim();
               }
             }
           });
@@ -264,6 +264,8 @@ export const ImportColaboradoresDialog = ({
             const dataFimPreenchida = colaborador.data_fim_contrato && colaborador.data_fim_contrato.trim() !== "";
             
             parsed.push({
+              id: (colaborador as any).id,
+              user_id: (colaborador as any).user_id,
               nome: colaborador.nome || "",
               email: colaborador.email || "",
               cpf: colaborador.cpf || "",
@@ -279,6 +281,10 @@ export const ImportColaboradoresDialog = ({
               data_nascimento: colaborador.data_nascimento,
               is_admin: colaborador.is_admin,
               ativo: dataFimPreenchida ? false : (colaborador.ativo ?? true),
+              has_finance_access: (colaborador as any).has_finance_access,
+              has_finance_view_access: (colaborador as any).has_finance_view_access,
+              has_admin_view_access: (colaborador as any).has_admin_view_access,
+              endereco: (colaborador as any).endereco,
             });
           }
         });
