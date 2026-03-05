@@ -1,42 +1,79 @@
+# Despesas Recorrentes - Gerador Automatico de Contas a Pagar
 
-Objetivo imediato: destravar seu acesso no ambiente Lovable (preview) sem depender de comportamento de popup instável.
+## O que sera criado
 
-Diagnóstico confirmado
-- O backend está íntegro para sua conta (`raquel@vantari.com.br`): usuário existe, colaborador vinculado, roles `admin` + `finance`, triggers ativos.
-- O erro atual acontece antes de criar sessão: `Sign in was cancelled` no `@lovable.dev/cloud-auth-js`.
-- Isso indica fechamento do popup sem retorno do `web_message` (não é falha de permissão/role).
-- O ponto mais frágil introduzido no frontend é o `redirect_uri` customizado com `"/auth?__lovable_token=..."`, que foge do padrão recomendado para Lovable Cloud.
+Uma funcionalidade de "Despesas Recorrentes" que permite cadastrar uma despesa uma unica vez e gerar automaticamente as contas a pagar para os proximos meses desejados.
 
-Plano de correção (foco em desbloqueio urgente)
-1) Corrigir fluxo OAuth para padrão estável
-- Arquivo: `src/pages/Auth.tsx`
-- Trocar `redirect_uri` para `window.location.origin` (sem `/auth` e sem `__lovable_token`).
-- Manter `lovable.auth.signInWithOAuth("google", ...)` (sem implementação manual de OAuth).
+Permitir edição de contas já cadastradas para que tenham essa mesma opção
 
-2) Fallback específico para preview (anti-bloqueio)
-- No erro `Sign in was cancelled` ou `Popup was blocked`, exibir ação explícita:
-  - “Abrir login em nova aba”
-- Essa ação abre o app em nova aba (mesma origem do preview) e dispara login por redirecionamento de página completa, evitando dependência do popup no iframe do editor.
-- Após login na aba, ao voltar para o preview, a sessão deve estar disponível.
+---
 
-3) Melhorar telemetria de erro para diagnóstico rápido
-- Em `Auth.tsx`, registrar `isIframe`, tipo do erro e fase do fluxo.
-- Toast com mensagem orientativa (ex.: popup bloqueado/cancelado + botão de fallback), sem texto genérico.
+## Como vai funcionar
 
-4) Manter AuthContext como está (sem mudanças estruturais agora)
-- `AuthContext` já está com listener correto e retry de roles.
-- Como o bloqueio atual é pré-sessão, prioridade é estabilizar entrada OAuth, não roles.
+1. Na tela de **Contas a Pagar**, um novo botao "Despesa Recorrente" abre um formulario especial
+2. O usuario preenche os dados da despesa (descricao, valor, fornecedor, centro de custo, etc.)
+3. Define a **recorrencia**: mensal, e por quantos meses (ex: 12 meses)
+4. Define o **dia do vencimento** (ex: dia 10 de cada mes)
+5. Ao salvar, o sistema gera todas as contas a pagar de uma vez, com as datas de vencimento corretas
 
-5) Validação obrigatória pós-ajuste
-- Preview `/auth`: clicar Google e confirmar que não trava mais no erro recorrente.
-- Se popup falhar, validar fallback “nova aba” e retorno com sessão ativa no preview.
-- Publicado (aba externa): login completo e redirecionamento para `/admin`.
+Isso elimina a necessidade de cadastrar um por um.
 
-Detalhes técnicos (resumo)
-- Não há necessidade de nova migração de banco para este bloqueio específico.
-- Ajuste principal é de client auth flow (`redirect_uri` + fallback de execução).
-- Segurança preservada: sem bypass client-side de admin; autorização continua via roles no backend.
+---
 
-Critério de sucesso
-- Você consegue autenticar no Lovable preview sem ficar presa na tela `/auth`.
-- Acesso ao painel administrativo volta a funcionar com sua conta atual.
+## Mudancas Tecnicas
+
+### 1. Nova tabela `recurring_expenses`
+
+Armazena o modelo da despesa recorrente para referencia futura.
+
+```text
+Campos:
+- id, description, amount, supplier_id, cost_center_id, bank_account_id
+- company_id, payment_method, chart_account_id
+- frequency (mensal)
+- day_of_month (dia do vencimento)
+- start_date, end_date (periodo de vigencia)
+- active (pode pausar/reativar)
+- created_at, updated_at
+```
+
+RLS: Acesso para admin e finance (mesmo padrao de payables).
+
+### 2. Componente `RecurringExpenseForm.tsx`
+
+Novo dialog com os mesmos campos do `PayableForm` + campos extras:
+
+- Dia do vencimento (1-28)
+- Quantidade de meses OU data final
+- Preview mostrando as datas que serao geradas
+
+### 3. Logica de geracao em lote
+
+Ao salvar, o sistema:
+
+- Cria o registro na tabela `recurring_expenses` (modelo)
+- Gera N registros na tabela `payables` existente, um para cada mes, com `recurring_expense_id` como referencia
+
+### 4. Coluna extra na tabela `payables`
+
+Adicionar `recurring_expense_id` (uuid, nullable) para rastrear quais contas vieram de uma recorrencia.
+
+### 5. Alteracoes na interface
+
+`**PayablesList.tsx`:**
+
+- Novo botao "Despesa Recorrente" ao lado de "Nova Conta"
+- Badge "Recorrente" nas contas geradas por recorrencia
+
+**Novo componente `RecurringExpenseForm.tsx`:**
+
+- Formulario com campos da despesa + configuracao de recorrencia
+- Preview das datas antes de confirmar
+- Botao "Gerar X contas"
+
+### 6. Arquivos envolvidos
+
+- **Novo**: `src/components/finance/payables/RecurringExpenseForm.tsx`
+- **Modificado**: `src/components/finance/payables/PayablesList.tsx` (botao + badge)
+- **Modificado**: `src/hooks/usePayables.ts` (funcao para criar em lote)
+- **Migracao**: Criar tabela `recurring_expenses` + coluna `recurring_expense_id` em `payables`
