@@ -332,9 +332,16 @@ export const ImportColaboradoresDialog = ({
     }
   };
 
+  const isRestoreMode = colaboradores.some(c => c.id);
+
   const handleImport = async () => {
     try {
-      const response = await onImport(colaboradores);
+      let response;
+      if (isRestoreMode && onRestore) {
+        response = await onRestore(colaboradores);
+      } else {
+        response = await onImport(colaboradores);
+      }
       setResults(response.results);
       setShowResults(true);
     } catch (error) {
