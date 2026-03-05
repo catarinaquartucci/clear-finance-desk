@@ -232,6 +232,24 @@ export const useColaboradores = () => {
     },
   });
 
+  const restoreColaboradores = useMutation({
+    mutationFn: async (colaboradores: any[]) => {
+      const { data, error } = await supabase.functions.invoke('restore-colaboradores', {
+        body: { colaboradores },
+      });
+
+      if (error) throw error;
+      return data as { results: ImportResult[]; sucessos: number; falhas: number };
+    },
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ["colaboradores"] });
+      toast.success(`Restauração concluída: ${data.sucessos} sucessos, ${data.falhas} falhas`);
+    },
+    onError: (error: any) => {
+      toast.error("Erro na restauração: " + error.message);
+    },
+  });
+
   return {
     colaboradores,
     isLoading,
@@ -243,6 +261,7 @@ export const useColaboradores = () => {
     cleanupColaboradores: cleanupColaboradores.mutateAsync,
     batchUpdateColaboradores: batchUpdateColaboradores.mutate,
     batchDeleteColaboradores: batchDeleteColaboradores.mutate,
+    restoreColaboradores: restoreColaboradores.mutateAsync,
     isCreating: createColaborador.isPending,
     isUpdating: updateColaborador.isPending,
     isDeleting: deleteColaborador.isPending,
@@ -251,5 +270,6 @@ export const useColaboradores = () => {
     isCleaning: cleanupColaboradores.isPending,
     isBatchUpdating: batchUpdateColaboradores.isPending,
     isBatchDeleting: batchDeleteColaboradores.isPending,
+    isRestoring: restoreColaboradores.isPending,
   };
 };
