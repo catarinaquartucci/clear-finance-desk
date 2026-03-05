@@ -57,20 +57,18 @@ const Loading = () => (
 
 const App = () => (
   <ErrorBoundary>
-  <QueryClientProvider client={queryClient}>
-    <ThemeProvider defaultTheme="light" storageKey="viver-de-ia-theme">
-      <AuthProvider>
-        <DuplicateProvider>
-          <AppPreferencesProvider>
-        <DuplicateProvider>
-          <AppPreferencesProvider>
-            <BirthdayPopup />
-            <TooltipProvider>
-              <Toaster />
-              <Sonner />
-              <BrowserRouter>
-                <Suspense fallback={<Loading />}>
-                <Routes>
+    <QueryClientProvider client={queryClient}>
+      <ThemeProvider defaultTheme="light" storageKey="viver-de-ia-theme">
+        <AuthProvider>
+          <DuplicateProvider>
+            <AppPreferencesProvider>
+              <BirthdayPopup />
+              <TooltipProvider>
+                <Toaster />
+                <Sonner />
+                <BrowserRouter>
+                  <Suspense fallback={<Loading />}>
+                    <Routes>
                   <Route path="/" element={<Regras />} />
                   <Route path="/auth" element={<Auth />} />
                   <Route path="/regras" element={<Regras />} />
