@@ -363,7 +363,7 @@ export const ImportColaboradoresDialog = ({
       <DialogContent className="max-w-4xl max-h-[90vh]">
         <DialogHeader>
           <DialogTitle>
-            {showResults ? "Resultado da Importação" : "Importar Colaboradores"}
+            {showResults ? "Resultado da Importação" : isRestoreMode ? "Restaurar Colaboradores" : "Importar Colaboradores"}
           </DialogTitle>
           <DialogDescription>
             {showResults 
