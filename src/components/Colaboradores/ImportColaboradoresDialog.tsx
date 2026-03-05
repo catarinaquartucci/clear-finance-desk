@@ -532,7 +532,7 @@ export const ImportColaboradoresDialog = ({
                     Importando...
                   </>
                 ) : (
-                  <>Importar {colaboradores.length} Colaboradores</>
+                  <>{isRestoreMode ? "Restaurar" : "Importar"} {colaboradores.length} Colaboradores</>
                 )}
               </Button>
             </div>
