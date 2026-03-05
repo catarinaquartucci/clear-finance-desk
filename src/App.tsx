@@ -42,7 +42,6 @@ import Conciliacao from "./pages/financeiro/Conciliacao";
 import Relatorios from "./pages/financeiro/Relatorios";
 import EmissaoNF from "./pages/financeiro/EmissaoNF";
 import BoletosPage from "./pages/financeiro/Boletos";
-import FinanceDashboard from "./pages/financeiro/FinanceDashboard";
 const queryClient = new QueryClient();
 
 const App = () => (
@@ -93,8 +92,7 @@ const App = () => (
                       <FinanceLayout />
                     </FinanceGuard>
                   }>
-                    <Route index element={<Navigate to="dashboard" replace />} />
-                    <Route path="dashboard" element={<FinanceDashboard />} />
+                    <Route index element={<Navigate to="cadastros" replace />} />
                     <Route path="cadastros" element={<Cadastros />} />
                     <Route path="contas-pagar" element={<ContasPagar />} />
                     <Route path="contas-receber" element={<ContasReceber />} />
