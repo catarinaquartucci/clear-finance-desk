@@ -1638,7 +1638,6 @@ export type Database = {
           notes: string | null
           paid_date: string | null
           payment_method: string | null
-          recurring_expense_id: string | null
           status: string
           supplier_id: string | null
           updated_at: string
@@ -1658,7 +1657,6 @@ export type Database = {
           notes?: string | null
           paid_date?: string | null
           payment_method?: string | null
-          recurring_expense_id?: string | null
           status?: string
           supplier_id?: string | null
           updated_at?: string
@@ -1678,7 +1676,6 @@ export type Database = {
           notes?: string | null
           paid_date?: string | null
           payment_method?: string | null
-          recurring_expense_id?: string | null
           status?: string
           supplier_id?: string | null
           updated_at?: string
@@ -1710,13 +1707,6 @@ export type Database = {
             columns: ["cost_center_id"]
             isOneToOne: false
             referencedRelation: "cost_centers"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "payables_recurring_expense_id_fkey"
-            columns: ["recurring_expense_id"]
-            isOneToOne: false
-            referencedRelation: "recurring_expenses"
             referencedColumns: ["id"]
           },
           {
@@ -1850,102 +1840,6 @@ export type Database = {
             columns: ["customer_id"]
             isOneToOne: false
             referencedRelation: "customers"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      recurring_expenses: {
-        Row: {
-          active: boolean
-          amount: number
-          bank_account_id: string | null
-          chart_account_id: string | null
-          company_id: string | null
-          cost_center_id: string | null
-          created_at: string
-          day_of_month: number
-          description: string
-          end_date: string | null
-          frequency: string
-          id: string
-          payment_method: string | null
-          start_date: string
-          supplier_id: string | null
-          total_months: number
-          updated_at: string
-        }
-        Insert: {
-          active?: boolean
-          amount: number
-          bank_account_id?: string | null
-          chart_account_id?: string | null
-          company_id?: string | null
-          cost_center_id?: string | null
-          created_at?: string
-          day_of_month?: number
-          description: string
-          end_date?: string | null
-          frequency?: string
-          id?: string
-          payment_method?: string | null
-          start_date: string
-          supplier_id?: string | null
-          total_months?: number
-          updated_at?: string
-        }
-        Update: {
-          active?: boolean
-          amount?: number
-          bank_account_id?: string | null
-          chart_account_id?: string | null
-          company_id?: string | null
-          cost_center_id?: string | null
-          created_at?: string
-          day_of_month?: number
-          description?: string
-          end_date?: string | null
-          frequency?: string
-          id?: string
-          payment_method?: string | null
-          start_date?: string
-          supplier_id?: string | null
-          total_months?: number
-          updated_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "recurring_expenses_bank_account_id_fkey"
-            columns: ["bank_account_id"]
-            isOneToOne: false
-            referencedRelation: "bank_accounts"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "recurring_expenses_chart_account_id_fkey"
-            columns: ["chart_account_id"]
-            isOneToOne: false
-            referencedRelation: "chart_of_accounts"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "recurring_expenses_company_id_fkey"
-            columns: ["company_id"]
-            isOneToOne: false
-            referencedRelation: "group_companies"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "recurring_expenses_cost_center_id_fkey"
-            columns: ["cost_center_id"]
-            isOneToOne: false
-            referencedRelation: "cost_centers"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "recurring_expenses_supplier_id_fkey"
-            columns: ["supplier_id"]
-            isOneToOne: false
-            referencedRelation: "suppliers"
             referencedColumns: ["id"]
           },
         ]

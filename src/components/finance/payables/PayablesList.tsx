@@ -2,7 +2,7 @@ import { useState } from "react";
 import { format } from "date-fns";
 import {
   Plus, Search, AlertTriangle, Clock, CheckCircle2, XCircle,
-  MoreHorizontal, Trash2, CreditCard, Repeat
+  MoreHorizontal, Trash2, CreditCard
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -22,7 +22,6 @@ import {
 import { usePayables } from "@/hooks/usePayables";
 import { PayableForm } from "./PayableForm";
 import { PayablePayDialog } from "./PayablePayDialog";
-import { RecurringExpenseForm } from "./RecurringExpenseForm";
 import { useAuth } from "@/contexts/AuthContext";
 import { CompanyFilter } from "@/components/finance/CompanyFilter";
 
@@ -39,11 +38,10 @@ export const PayablesList = () => {
   const [companyFilter, setCompanyFilter] = useState("all");
   const [search, setSearch] = useState("");
   const [formOpen, setFormOpen] = useState(false);
-  const [recurringFormOpen, setRecurringFormOpen] = useState(false);
   const [payDialogId, setPayDialogId] = useState<string | null>(null);
   const [deleteId, setDeleteId] = useState<string | null>(null);
 
-  const { payables, isLoading, stats, createPayable, createRecurringExpense, deletePayable, markAsPaid, isCreatingRecurring } = usePayables(statusFilter, companyFilter);
+  const { payables, isLoading, stats, createPayable, deletePayable, markAsPaid } = usePayables(statusFilter, companyFilter);
 
   const today = new Date().toISOString().split("T")[0];
 
@@ -89,14 +87,7 @@ export const PayablesList = () => {
           <CompanyFilter value={companyFilter} onChange={setCompanyFilter} />
         </div>
         {!hasFinanceViewOnly && (
-          <div className="flex gap-2">
-            <Button variant="outline" onClick={() => setRecurringFormOpen(true)}>
-              <Repeat className="w-4 h-4 mr-1" /> Despesa Recorrente
-            </Button>
-            <Button onClick={() => setFormOpen(true)}>
-              <Plus className="w-4 h-4 mr-1" /> Nova Conta
-            </Button>
-          </div>
+          <Button onClick={() => setFormOpen(true)}><Plus className="w-4 h-4 mr-1" /> Nova Conta</Button>
         )}
       </div>
 
@@ -126,16 +117,7 @@ export const PayablesList = () => {
                 const Icon = cfg.icon;
                 return (
                   <TableRow key={p.id}>
-                    <TableCell className="font-medium">
-                      <div className="flex items-center gap-2">
-                        {p.description}
-                        {(p as any).recurring_expense_id && (
-                          <Badge variant="secondary" className="text-[10px] px-1.5 py-0 gap-0.5">
-                            <Repeat className="w-3 h-3" /> Recorrente
-                          </Badge>
-                        )}
-                      </div>
-                    </TableCell>
+                    <TableCell className="font-medium">{p.description}</TableCell>
                     <TableCell className="text-muted-foreground">{p.supplier?.name ?? "—"}</TableCell>
                     <TableCell className="text-right font-mono">{fmt(Number(p.amount))}</TableCell>
                     <TableCell>{format(new Date(p.due_date + "T12:00:00"), "dd/MM/yyyy")}</TableCell>
@@ -176,13 +158,6 @@ export const PayablesList = () => {
 
       {/* Dialogs */}
       <PayableForm open={formOpen} onOpenChange={setFormOpen} onSubmit={createPayable} />
-
-      <RecurringExpenseForm
-        open={recurringFormOpen}
-        onOpenChange={setRecurringFormOpen}
-        onSubmit={createRecurringExpense}
-        isSubmitting={isCreatingRecurring}
-      />
 
       {payDialogId && (
         <PayablePayDialog

@@ -1,79 +1,87 @@
-# Despesas Recorrentes - Gerador Automatico de Contas a Pagar
+
+
+# Dashboard Financeiro - Pagina Inicial do Modulo Financas
+
+## Resumo
+
+Criar uma pagina de dashboard como tela inicial do modulo financeiro (`/financeiro/dashboard`), substituindo o redirecionamento atual para "Cadastros". A pagina exibira KPI cards com os principais indicadores e graficos interativos usando dados reais de contas a pagar, receber e centros de custo.
+
+---
 
 ## O que sera criado
 
-Uma funcionalidade de "Despesas Recorrentes" que permite cadastrar uma despesa uma unica vez e gerar automaticamente as contas a pagar para os proximos meses desejados.
+### 1. Pagina `src/pages/financeiro/FinanceDashboard.tsx`
 
-Permitir edição de contas já cadastradas para que tenham essa mesma opção
+Dashboard com as seguintes secoes:
+
+**KPI Cards (linha superior - 6 cards):**
+- Receita Total (receivables com status received)
+- Despesa Total (payables com status paid)
+- Geracao de Caixa (receita - despesa)
+- Margem Liquida (%)
+- Atingimento de Meta (% vs meta configurada)
+- Saldo Final
+
+**Graficos:**
+- Receitas x Despesas mensal (BarChart com recharts, 12 meses do ano atual)
+- Distribuicao por Centro de Custo (PieChart)
+- Contas vencidas vs em dia (cards de alerta)
+- Ultimas movimentacoes (tabela resumida com as 5 mais recentes)
+
+### 2. Hook `src/hooks/useDashboardFinance.ts`
+
+Hook dedicado que busca dados agregados para o dashboard:
+- Total de payables por status (open, overdue, paid)
+- Total de receivables por status
+- Dados mensais para o grafico de barras (reutiliza logica de `useMonthlyFlowReport`)
+- Dados de centro de custo (reutiliza logica de `useCostCenterDashboard`)
+- Ultimas transacoes (5 payables + 5 receivables mais recentes)
+
+### 3. Componentes visuais
+
+- `src/components/finance/dashboard/FinancialKPICards.tsx` - Grid de 6 KPI cards
+- `src/components/finance/dashboard/RevenueExpenseChart.tsx` - Grafico de barras Receitas x Despesas
+- `src/components/finance/dashboard/RecentTransactions.tsx` - Tabela das ultimas movimentacoes (ja existe, sera reutilizado/ajustado)
+
+### 4. Alteracoes em arquivos existentes
+
+**`src/App.tsx`:**
+- Importar `FinanceDashboard`
+- Alterar redirect index de `cadastros` para `dashboard`
+- Adicionar rota `<Route path="dashboard" element={<FinanceDashboard />} />`
+
+**`src/components/finance/layout/FinanceNavigation.tsx`:**
+- Adicionar item "Dashboard" como primeiro item da navegacao com icone `LayoutDashboard`
 
 ---
 
-## Como vai funcionar
+## Detalhes Tecnicos
 
-1. Na tela de **Contas a Pagar**, um novo botao "Despesa Recorrente" abre um formulario especial
-2. O usuario preenche os dados da despesa (descricao, valor, fornecedor, centro de custo, etc.)
-3. Define a **recorrencia**: mensal, e por quantos meses (ex: 12 meses)
-4. Define o **dia do vencimento** (ex: dia 10 de cada mes)
-5. Ao salvar, o sistema gera todas as contas a pagar de uma vez, com as datas de vencimento corretas
+### Hook useDashboardFinance
 
-Isso elimina a necessidade de cadastrar um por um.
-
----
-
-## Mudancas Tecnicas
-
-### 1. Nova tabela `recurring_expenses`
-
-Armazena o modelo da despesa recorrente para referencia futura.
-
-```text
-Campos:
-- id, description, amount, supplier_id, cost_center_id, bank_account_id
-- company_id, payment_method, chart_account_id
-- frequency (mensal)
-- day_of_month (dia do vencimento)
-- start_date, end_date (periodo de vigencia)
-- active (pode pausar/reativar)
-- created_at, updated_at
+```typescript
+// Busca paralela de payables e receivables do ano atual
+// Agrega por mes para grafico de barras
+// Calcula KPIs: totais, margens, vencidos
+// Retorna { kpis, monthlyData, costCenterData, recentItems, isLoading }
 ```
 
-RLS: Acesso para admin e finance (mesmo padrao de payables).
+### KPI Cards
 
-### 2. Componente `RecurringExpenseForm.tsx`
+Usa o componente Card existente com icones do lucide-react e cores condicionais (verde para positivo, vermelho para negativo).
 
-Novo dialog com os mesmos campos do `PayableForm` + campos extras:
+### Grafico Receitas x Despesas
 
-- Dia do vencimento (1-28)
-- Quantidade de meses OU data final
-- Preview mostrando as datas que serao geradas
+Utiliza `recharts` (BarChart) com dois bars: Receitas (verde) e Despesas (vermelho), agrupados por mes.
 
-### 3. Logica de geracao em lote
+### Filtro por filial
 
-Ao salvar, o sistema:
+Inclui o `CompanyFilter` existente no topo do dashboard para filtrar todos os dados por empresa/filial.
 
-- Cria o registro na tabela `recurring_expenses` (modelo)
-- Gera N registros na tabela `payables` existente, um para cada mes, com `recurring_expense_id` como referencia
+### Sequencia de implementacao
 
-### 4. Coluna extra na tabela `payables`
-
-Adicionar `recurring_expense_id` (uuid, nullable) para rastrear quais contas vieram de uma recorrencia.
-
-### 5. Alteracoes na interface
-
-`**PayablesList.tsx`:**
-
-- Novo botao "Despesa Recorrente" ao lado de "Nova Conta"
-- Badge "Recorrente" nas contas geradas por recorrencia
-
-**Novo componente `RecurringExpenseForm.tsx`:**
-
-- Formulario com campos da despesa + configuracao de recorrencia
-- Preview das datas antes de confirmar
-- Botao "Gerar X contas"
-
-### 6. Arquivos envolvidos
-
-- **Novo**: `src/components/finance/payables/RecurringExpenseForm.tsx`
-- **Modificado**: `src/components/finance/payables/PayablesList.tsx` (botao + badge)
-- **Modificado**: `src/hooks/usePayables.ts` (funcao para criar em lote)
-- **Migracao**: Criar tabela `recurring_expenses` + coluna `recurring_expense_id` em `payables`
+1. Criar hook `useDashboardFinance.ts`
+2. Criar componentes `FinancialKPICards.tsx` e `RevenueExpenseChart.tsx`
+3. Criar pagina `FinanceDashboard.tsx`
+4. Atualizar `FinanceNavigation.tsx` (adicionar item Dashboard)
+5. Atualizar `App.tsx` (rota + redirect)
