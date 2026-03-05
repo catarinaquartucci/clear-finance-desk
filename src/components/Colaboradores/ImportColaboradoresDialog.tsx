@@ -10,6 +10,8 @@ import * as XLSX from "xlsx";
 
 // Tipo para dados do colaborador da planilha
 export interface ColaboradorImport {
+  id?: string;
+  user_id?: string;
   nome?: string;
   email?: string;
   cpf?: string;
@@ -25,6 +27,10 @@ export interface ColaboradorImport {
   data_nascimento?: string;
   is_admin?: boolean;
   ativo?: boolean;
+  has_finance_access?: boolean;
+  has_finance_view_access?: boolean;
+  has_admin_view_access?: boolean;
+  endereco?: string;
 }
 
 // Mapeamento de colunas da planilha para campos do sistema
@@ -107,19 +113,30 @@ const COLUMN_MAPPING: Record<string, keyof ColaboradorImport> = {
   "ativo": "ativo",
   "status": "ativo",
   "ativo?": "ativo",
+  // Campos extras para restauração
+  "id": "id" as any,
+  "user_id": "user_id" as any,
+  "endereco": "endereco" as any,
+  "endereço": "endereco" as any,
+  "has_finance_access": "has_finance_access" as any,
+  "acesso financeiro": "has_finance_access" as any,
+  "has_finance_view_access": "has_finance_view_access" as any,
+  "has_admin_view_access": "has_admin_view_access" as any,
 };
 
 interface ImportColaboradoresDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onImport: (colaboradores: ColaboradorImport[]) => Promise<{ results: ImportResult[]; sucessos: number; falhas: number }>;
+  onRestore?: (colaboradores: ColaboradorImport[]) => Promise<{ results: ImportResult[]; sucessos: number; falhas: number }>;
   isImporting: boolean;
 }
 
 export const ImportColaboradoresDialog = ({ 
   open, 
   onOpenChange, 
-  onImport, 
+  onImport,
+  onRestore,
   isImporting 
 }: ImportColaboradoresDialogProps) => {
   const [results, setResults] = useState<ImportResult[] | null>(null);
