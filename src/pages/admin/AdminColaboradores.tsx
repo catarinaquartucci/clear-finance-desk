@@ -1,6 +1,6 @@
 import { useState, useMemo } from "react";
 import { Plus, Users, UserCheck, Shield, Upload, DollarSign, Download } from "lucide-react";
-import * as XLSX from "xlsx";
+import { toast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { ColaboradorForm } from "@/components/Colaboradores/ColaboradorForm";

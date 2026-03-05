@@ -1,8 +1,8 @@
 import { Download } from "lucide-react";
-import * as XLSX from "xlsx";
 import { Button } from "@/components/ui/button";
 import { CashFlowRow, StatusFilter } from "@/hooks/useCashFlowData";
 import { formatCurrency } from "@/lib/taxCalculations";
+import { toast } from "@/hooks/use-toast";
 
 interface CashFlowExportButtonProps {
   rows: CashFlowRow[];

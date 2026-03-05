@@ -6,7 +6,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 import { CheckCircle2, XCircle, Loader2, Upload, FileSpreadsheet, AlertCircle } from "lucide-react";
 import { ImportResult } from "@/hooks/useColaboradores";
-import * as XLSX from "xlsx";
+import { toast } from "@/hooks/use-toast";
 
 // Tipo para dados do colaborador da planilha
 export interface ColaboradorImport {
