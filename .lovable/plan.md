@@ -1,29 +1,79 @@
+# Despesas Recorrentes - Gerador Automatico de Contas a Pagar
 
+## O que sera criado
 
-## Diagnóstico e Correções
+Uma funcionalidade de "Despesas Recorrentes" que permite cadastrar uma despesa uma unica vez e gerar automaticamente as contas a pagar para os proximos meses desejados.
 
-Dois problemas identificados:
+Permitir edição de contas já cadastradas para que tenham essa mesma opção
 
-1. **Email provider desabilitado (novamente)** -- O backend voltou a desabilitar o provedor de email. Preciso reativá-lo pois o sistema depende dele internamente (criação de contas, triggers, etc.), mesmo que a UI mostre apenas Google.
+---
 
-2. **Google OAuth bloqueado no iframe** -- O erro `ERR_BLOCKED_BY_RESPONSE` na screenshot é esperado: o Google bloqueia login dentro de iframes por segurança. Isso funciona normalmente quando acessado pela URL publicada (`clear-finance-desk.lovable.app`) ou no preview aberto em nova aba.
+## Como vai funcionar
 
-### Mudanças
+1. Na tela de **Contas a Pagar**, um novo botao "Despesa Recorrente" abre um formulario especial
+2. O usuario preenche os dados da despesa (descricao, valor, fornecedor, centro de custo, etc.)
+3. Define a **recorrencia**: mensal, e por quantos meses (ex: 12 meses)
+4. Define o **dia do vencimento** (ex: dia 10 de cada mes)
+5. Ao salvar, o sistema gera todas as contas a pagar de uma vez, com as datas de vencimento corretas
 
-**1. Reativar email provider no backend**
-- Usar `configure-auth` para reabilitar o provedor de email.
+Isso elimina a necessidade de cadastrar um por um.
 
-**2. Simplificar Auth.tsx para login somente via Google**
-- Remover formulário de email/senha e cadastro
-- Manter apenas o botão "Entrar com Google"
-- Remover restrição `hd: "vantari.com.br"` (permitir externos)
-- Manter `prompt: "select_account"`
-- Remover fluxo de primeiro acesso, esqueci senha, e cadastro manual
+---
 
-**3. Manter fluxo de primeiro acesso via backend**
-- O `setup_primeiro_admin` e `vincular_user_colaborador` continuam funcionando -- quando o usuário faz login via Google, o `handle_new_user_profile` trigger cria o perfil automaticamente.
+## Mudancas Tecnicas
 
-### Arquivos modificados
-- `src/pages/Auth.tsx` -- Simplificar para Google-only login
-- Backend config -- Reativar email provider
+### 1. Nova tabela `recurring_expenses`
 
+Armazena o modelo da despesa recorrente para referencia futura.
+
+```text
+Campos:
+- id, description, amount, supplier_id, cost_center_id, bank_account_id
+- company_id, payment_method, chart_account_id
+- frequency (mensal)
+- day_of_month (dia do vencimento)
+- start_date, end_date (periodo de vigencia)
+- active (pode pausar/reativar)
+- created_at, updated_at
+```
+
+RLS: Acesso para admin e finance (mesmo padrao de payables).
+
+### 2. Componente `RecurringExpenseForm.tsx`
+
+Novo dialog com os mesmos campos do `PayableForm` + campos extras:
+
+- Dia do vencimento (1-28)
+- Quantidade de meses OU data final
+- Preview mostrando as datas que serao geradas
+
+### 3. Logica de geracao em lote
+
+Ao salvar, o sistema:
+
+- Cria o registro na tabela `recurring_expenses` (modelo)
+- Gera N registros na tabela `payables` existente, um para cada mes, com `recurring_expense_id` como referencia
+
+### 4. Coluna extra na tabela `payables`
+
+Adicionar `recurring_expense_id` (uuid, nullable) para rastrear quais contas vieram de uma recorrencia.
+
+### 5. Alteracoes na interface
+
+`**PayablesList.tsx`:**
+
+- Novo botao "Despesa Recorrente" ao lado de "Nova Conta"
+- Badge "Recorrente" nas contas geradas por recorrencia
+
+**Novo componente `RecurringExpenseForm.tsx`:**
+
+- Formulario com campos da despesa + configuracao de recorrencia
+- Preview das datas antes de confirmar
+- Botao "Gerar X contas"
+
+### 6. Arquivos envolvidos
+
+- **Novo**: `src/components/finance/payables/RecurringExpenseForm.tsx`
+- **Modificado**: `src/components/finance/payables/PayablesList.tsx` (botao + badge)
+- **Modificado**: `src/hooks/usePayables.ts` (funcao para criar em lote)
+- **Migracao**: Criar tabela `recurring_expenses` + coluna `recurring_expense_id` em `payables`
