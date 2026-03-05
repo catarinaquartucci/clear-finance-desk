@@ -1,29 +1,29 @@
 
 
-## Diagnóstico: Login Bloqueado
+## Diagnóstico e Correções
 
-### Problema Identificado
-O provedor de email foi **desabilitado** na configuração de autenticação do backend. Os logs confirmam o erro `email_provider_disabled` em todas as tentativas de login por email, cadastro e recuperação de senha. Isso bloqueia completamente o acesso via email/senha.
+Dois problemas identificados:
 
-O Google OAuth deve continuar funcionando (usa outro provedor), mas se ele também falhar pode ser um problema de redirect ou configuração.
+1. **Email provider desabilitado (novamente)** -- O backend voltou a desabilitar o provedor de email. Preciso reativá-lo pois o sistema depende dele internamente (criação de contas, triggers, etc.), mesmo que a UI mostre apenas Google.
 
-### Correções Necessárias
+2. **Google OAuth bloqueado no iframe** -- O erro `ERR_BLOCKED_BY_RESPONSE` na screenshot é esperado: o Google bloqueia login dentro de iframes por segurança. Isso funciona normalmente quando acessado pela URL publicada (`clear-finance-desk.lovable.app`) ou no preview aberto em nova aba.
 
-**1. Reativar o provedor de email no backend**
-- Usar a ferramenta `configure-auth` para reabilitar o provedor de email na configuração de autenticação.
-- Isso restaurará login por email/senha, cadastro e recuperação de senha.
+### Mudanças
 
-**2. Verificar e garantir que Google OAuth funciona**
-- Confirmar que o botão "Entrar com Google" está usando `lovable.auth.signInWithOAuth("google")` corretamente (já está implementado).
-- Testar o fluxo de redirect após login Google.
+**1. Reativar email provider no backend**
+- Usar `configure-auth` para reabilitar o provedor de email.
 
-**3. Validar redirect pós-login**
-- Garantir que após login (email ou Google), o usuário é redirecionado corretamente: admin → `/admin`, colaborador → `/solicitacoes`.
+**2. Simplificar Auth.tsx para login somente via Google**
+- Remover formulário de email/senha e cadastro
+- Manter apenas o botão "Entrar com Google"
+- Remover restrição `hd: "vantari.com.br"` (permitir externos)
+- Manter `prompt: "select_account"`
+- Remover fluxo de primeiro acesso, esqueci senha, e cadastro manual
 
-### Arquivos a Modificar
-- **Configuração de autenticação**: Reativar email provider via ferramenta de configuração do backend
-- Nenhuma mudança de código necessária -- o problema é puramente de configuração do backend
+**3. Manter fluxo de primeiro acesso via backend**
+- O `setup_primeiro_admin` e `vincular_user_colaborador` continuam funcionando -- quando o usuário faz login via Google, o `handle_new_user_profile` trigger cria o perfil automaticamente.
 
-### Detalhes Técnicos
-O erro ocorre na camada de autenticação do backend (GoTrue API retorna `400: Email logins are disabled`). A correção é reativar o email provider nas configurações de autenticação, o que não requer alterações em código.
+### Arquivos modificados
+- `src/pages/Auth.tsx` -- Simplificar para Google-only login
+- Backend config -- Reativar email provider
 
