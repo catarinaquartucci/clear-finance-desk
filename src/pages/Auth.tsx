@@ -18,13 +18,29 @@ const Auth = () => {
   }, [user, isAdmin, authLoading, navigate]);
 
   const handleGoogleLogin = async () => {
-    const { error } = await lovable.auth.signInWithOAuth("google", {
-      redirect_uri: window.location.origin,
-      extraParams: {
-        prompt: "select_account",
-      },
-    });
-    if (error) toast.error("Erro ao entrar com Google");
+    try {
+      // Build redirect preserving preview token if present
+      const url = new URL(window.location.href);
+      const redirectUrl = new URL("/auth", window.location.origin);
+      const lovableToken = url.searchParams.get("__lovable_token");
+      if (lovableToken) {
+        redirectUrl.searchParams.set("__lovable_token", lovableToken);
+      }
+
+      const { error } = await lovable.auth.signInWithOAuth("google", {
+        redirect_uri: redirectUrl.toString(),
+        extraParams: {
+          prompt: "select_account",
+        },
+      });
+      if (error) {
+        console.error("[Auth] OAuth error:", error);
+        toast.error(`Erro ao entrar com Google: ${error.message || "tente novamente"}`);
+      }
+    } catch (err: any) {
+      console.error("[Auth] Unexpected error:", err);
+      toast.error("Erro inesperado ao iniciar login. Recarregue a página.");
+    }
   };
 
   if (authLoading) {
