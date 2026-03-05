@@ -49,10 +49,19 @@ const BoletosPage = lazy(() => import("./pages/financeiro/Boletos"));
 
 const queryClient = new QueryClient();
 
+const Loading = () => (
+  <div className="min-h-screen flex items-center justify-center bg-background">
+    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
+  </div>
+);
+
 const App = () => (
+  <ErrorBoundary>
   <QueryClientProvider client={queryClient}>
     <ThemeProvider defaultTheme="light" storageKey="viver-de-ia-theme">
       <AuthProvider>
+        <DuplicateProvider>
+          <AppPreferencesProvider>
         <DuplicateProvider>
           <AppPreferencesProvider>
             <BirthdayPopup />
@@ -60,6 +69,7 @@ const App = () => (
               <Toaster />
               <Sonner />
               <BrowserRouter>
+                <Suspense fallback={<Loading />}>
                 <Routes>
                   <Route path="/" element={<Regras />} />
                   <Route path="/auth" element={<Auth />} />
