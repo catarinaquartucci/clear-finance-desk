@@ -43,9 +43,28 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [canEditAdmin, setCanEditAdmin] = useState(false);
   const [loading, setLoading] = useState(true);
 
-  const checkUserRoles = async (userId: string) => {
+  const tryAutoLinkColaborador = async (userId: string, email: string) => {
+    try {
+      if (import.meta.env.DEV) console.log('🔗 [AuthContext] Tentando vincular colaborador:', email);
+      const { data, error } = await supabase.rpc('vincular_user_colaborador', {
+        p_colaborador_email: email,
+        p_user_id: userId,
+      });
+      if (import.meta.env.DEV) console.log('🔗 [AuthContext] Resultado vinculação:', { data, error });
+    } catch (err) {
+      // Silencioso - pode não ter colaborador cadastrado
+      if (import.meta.env.DEV) console.log('🔗 [AuthContext] Vinculação não aplicável:', err);
+    }
+  };
+
+  const checkUserRoles = async (userId: string, userEmail?: string) => {
     try {
       if (import.meta.env.DEV) console.log('🔍 [AuthContext] Iniciando verificação de roles para userId:', userId);
+
+      // Tentar vincular colaborador automaticamente (idempotente)
+      if (userEmail) {
+        await tryAutoLinkColaborador(userId, userEmail);
+      }
       
       // Query direta na tabela user_roles
       const { data, error } = await supabase
@@ -134,7 +153,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     if (user?.id) {
       if (import.meta.env.DEV) console.log('🔄 [AuthContext] Refresh de roles solicitado');
       setLoading(true);
-      await checkUserRoles(user.id);
+      await checkUserRoles(user.id, user.email);
     }
   };
 
@@ -157,7 +176,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
           setLoading(true);
           // Usar setTimeout para evitar deadlock
           setTimeout(() => {
-            checkUserRoles(session.user.id);
+            checkUserRoles(session.user.id, session.user.email);
           }, 0);
         } else {
           if (import.meta.env.DEV) console.log('👤 [AuthContext] Usuário deslogado, resetando estados');
@@ -180,7 +199,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       setUser(session?.user ?? null);
       
       if (session?.user) {
-        checkUserRoles(session.user.id);
+        checkUserRoles(session.user.id, session.user.email);
       } else {
         setLoading(false);
       }
