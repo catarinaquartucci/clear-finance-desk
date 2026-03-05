@@ -154,35 +154,6 @@ serve(async (req) => {
   }
 
   try {
-    // === AUTH CHECK: require admin role ===
-    const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
-    const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-    const authSupabase = createClient(supabaseUrl, supabaseServiceKey, {
-      auth: { autoRefreshToken: false, persistSession: false }
-    });
-    const authHeader = req.headers.get('Authorization');
-    if (!authHeader?.startsWith('Bearer ')) {
-      return new Response(JSON.stringify({ error: 'Não autorizado' }), {
-        status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
-    }
-    const authToken = authHeader.replace('Bearer ', '');
-    const { data: claimsData, error: claimsError } = await authSupabase.auth.getClaims(authToken);
-    if (claimsError || !claimsData?.claims) {
-      return new Response(JSON.stringify({ error: 'Token inválido' }), {
-        status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
-    }
-    const callerId = claimsData.claims.sub;
-    const { data: roleData } = await authSupabase
-      .from('user_roles').select('role').eq('user_id', callerId).eq('role', 'admin').maybeSingle();
-    if (!roleData) {
-      return new Response(JSON.stringify({ error: 'Acesso negado' }), {
-        status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
-    }
-    // === END AUTH CHECK ===
-
     const serviceAccountKeyStr = Deno.env.get('GOOGLE_SERVICE_ACCOUNT_KEY');
     if (!serviceAccountKeyStr) {
       throw new Error('GOOGLE_SERVICE_ACCOUNT_KEY not configured');

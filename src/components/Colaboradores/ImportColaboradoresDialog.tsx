@@ -6,7 +6,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 import { CheckCircle2, XCircle, Loader2, Upload, FileSpreadsheet, AlertCircle } from "lucide-react";
 import { ImportResult } from "@/hooks/useColaboradores";
-import ExcelJS from "exceljs";
+import * as XLSX from "xlsx";
 
 // Tipo para dados do colaborador da planilha
 export interface ColaboradorImport {
@@ -132,30 +132,22 @@ export const ImportColaboradoresDialog = ({
   const parseExcelDate = (value: unknown): string => {
     if (!value) return "";
     
-    // Se for Date object (ExcelJS retorna Date para células de data)
-    if (value instanceof Date) {
-      const y = value.getFullYear();
-      const m = String(value.getMonth() + 1).padStart(2, "0");
-      const d = String(value.getDate()).padStart(2, "0");
-      return `${y}-${m}-${d}`;
-    }
-    
-    // Se for número (serial do Excel)
+    // Se for número (data do Excel)
     if (typeof value === "number") {
-      const excelEpoch = new Date(1899, 11, 30);
-      const date = new Date(excelEpoch.getTime() + value * 86400000);
-      const y = date.getFullYear();
-      const m = String(date.getMonth() + 1).padStart(2, "0");
-      const d = String(date.getDate()).padStart(2, "0");
-      return `${y}-${m}-${d}`;
+      const date = XLSX.SSF.parse_date_code(value);
+      if (date) {
+        return `${date.y}-${String(date.m).padStart(2, "0")}-${String(date.d).padStart(2, "0")}`;
+      }
     }
     
     // Se for string
     if (typeof value === "string") {
+      // Tentar converter dd/mm/yyyy para yyyy-mm-dd
       const brDateMatch = value.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
       if (brDateMatch) {
         return `${brDateMatch[3]}-${brDateMatch[2].padStart(2, "0")}-${brDateMatch[1].padStart(2, "0")}`;
       }
+      // Se já estiver no formato yyyy-mm-dd
       if (/^\d{4}-\d{2}-\d{2}$/.test(value)) {
         return value;
       }
@@ -164,48 +156,25 @@ export const ImportColaboradoresDialog = ({
     return String(value);
   };
 
-  const parseFile = useCallback(async (file: File) => {
+  const parseFile = useCallback((file: File) => {
+    const reader = new FileReader();
     setFileName(file.name);
     setParseErrors([]);
     
-    try {
-      const buffer = await file.arrayBuffer();
-      const workbook = new ExcelJS.Workbook();
-      await workbook.xlsx.load(buffer);
-      const worksheet = workbook.worksheets[0];
-      
-      if (!worksheet || worksheet.rowCount === 0) {
-        setParseErrors(["Planilha vazia ou sem dados válidos"]);
-        return;
-      }
-      
-      // Extract headers from first row
-      const headerRow = worksheet.getRow(1);
-      const headers: string[] = [];
-      headerRow.eachCell({ includeEmpty: true }, (cell, colNumber) => {
-        headers[colNumber] = String(cell.value || "").trim();
-      });
-      
-      // Convert rows to JSON-like records
-      const jsonData: Record<string, unknown>[] = [];
-      worksheet.eachRow({ includeEmpty: false }, (row, rowNumber) => {
-        if (rowNumber === 1) return; // skip header
-        const record: Record<string, unknown> = {};
-        row.eachCell({ includeEmpty: true }, (cell, colNumber) => {
-          const header = headers[colNumber];
-          if (header) {
-            record[header] = cell.value;
-          }
-        });
-        jsonData.push(record);
-      });
+    reader.onload = (e) => {
+      try {
+        const data = e.target?.result;
+        const workbook = XLSX.read(data, { type: "array", cellDates: true });
+        const sheetName = workbook.SheetNames[0];
+        const worksheet = workbook.Sheets[sheetName];
+        const jsonData = XLSX.utils.sheet_to_json<Record<string, unknown>>(worksheet, { raw: false });
         
-      console.log("Dados brutos da planilha:", jsonData);
-      
-      if (jsonData.length === 0) {
-        setParseErrors(["Planilha vazia ou sem dados válidos"]);
-        return;
-      }
+        console.log("Dados brutos da planilha:", jsonData);
+        
+        if (jsonData.length === 0) {
+          setParseErrors(["Planilha vazia ou sem dados válidos"]);
+          return;
+        }
 
         // Log das colunas encontradas
         const firstRow = jsonData[0];
@@ -305,10 +274,13 @@ export const ImportColaboradoresDialog = ({
 
         setParseErrors(errors);
         setColaboradores(parsed);
-    } catch (error) {
-      console.error("Erro ao processar arquivo:", error);
-      setParseErrors(["Erro ao processar arquivo. Verifique se é um arquivo Excel ou CSV válido."]);
-    }
+      } catch (error) {
+        console.error("Erro ao processar arquivo:", error);
+        setParseErrors(["Erro ao processar arquivo. Verifique se é um arquivo Excel ou CSV válido."]);
+      }
+    };
+
+    reader.readAsArrayBuffer(file);
   }, []);
 
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {

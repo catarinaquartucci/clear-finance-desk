@@ -210,12 +210,16 @@ export const DevolucaoForm = () => {
 
         if (uploadError) throw uploadError;
 
+        const { data: urlData } = supabase.storage
+          .from('devolucoes')
+          .getPublicUrl(filePath);
+
         const { error: anexoError } = await supabase
           .from('devolucao_anexos')
           .insert({
             devolucao_id: devolucaoData.id,
             descricao: anexo.descricao.trim(),
-            arquivo_url: filePath,
+            arquivo_url: urlData.publicUrl,
             ordem: i,
           });
 

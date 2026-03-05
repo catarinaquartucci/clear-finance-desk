@@ -2,7 +2,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
 interface MonthlyPlanning {
@@ -321,37 +321,6 @@ Deno.serve(async (req) => {
   }
 
   try {
-    // === AUTH CHECK: require admin or finance role ===
-    const authHeader = req.headers.get('Authorization');
-    if (!authHeader?.startsWith('Bearer ')) {
-      return new Response(JSON.stringify({ error: 'Não autorizado' }), {
-        status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
-    {
-      const authClient = createClient(
-        Deno.env.get("SUPABASE_URL")!,
-        Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
-        { auth: { autoRefreshToken: false, persistSession: false } }
-      );
-      const token = authHeader.replace('Bearer ', '');
-      const { data: claimsData, error: claimsError } = await authClient.auth.getClaims(token);
-      if (claimsError || !claimsData?.claims) {
-        return new Response(JSON.stringify({ error: 'Token inválido' }), {
-          status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
-      }
-      const callerId = claimsData.claims.sub as string;
-      const { data: roles } = await authClient
-        .from('user_roles').select('role').eq('user_id', callerId).in('role', ['admin', 'finance']);
-      if (!roles || roles.length === 0) {
-        return new Response(JSON.stringify({ error: 'Acesso negado' }), {
-          status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
-      }
-    }
-    // === END AUTH CHECK ===
-
     // Ler parâmetros do body (opcionais)
     const body = await req.json().catch(() => ({}));
     

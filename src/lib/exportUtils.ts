@@ -1,35 +1,10 @@
-import ExcelJS from "exceljs";
+import * as XLSX from "xlsx";
 
-export async function exportToExcel(data: Record<string, unknown>[], filename: string, sheetName = "Relatório") {
-  const workbook = new ExcelJS.Workbook();
-  const worksheet = workbook.addWorksheet(sheetName);
-
-  if (data.length > 0) {
-    const headers = Object.keys(data[0]);
-    worksheet.addRow(headers);
-    // Style header row
-    const headerRow = worksheet.getRow(1);
-    headerRow.font = { bold: true };
-
-    data.forEach((row) => {
-      worksheet.addRow(headers.map((h) => row[h] as string | number));
-    });
-
-    // Auto-fit columns
-    headers.forEach((_, i) => {
-      const col = worksheet.getColumn(i + 1);
-      col.width = 18;
-    });
-  }
-
-  const buffer = await workbook.xlsx.writeBuffer();
-  const blob = new Blob([buffer], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = `${filename}.xlsx`;
-  a.click();
-  URL.revokeObjectURL(url);
+export function exportToExcel(data: Record<string, unknown>[], filename: string, sheetName = "Relatório") {
+  const ws = XLSX.utils.json_to_sheet(data);
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, sheetName);
+  XLSX.writeFile(wb, `${filename}.xlsx`);
 }
 
 export function exportToPDF(title: string, headers: string[], rows: string[][]) {

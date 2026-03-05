@@ -205,12 +205,16 @@ export const ReembolsoForm = () => {
 
         if (uploadError) throw uploadError;
 
+        const { data: urlData } = supabase.storage
+          .from('reembolsos')
+          .getPublicUrl(filePath);
+
         const { error: anexoError } = await supabase
           .from('reembolso_anexos')
           .insert({
             reembolso_id: reembolsoData.id,
             descricao: anexo.descricao.trim(),
-            arquivo_url: filePath,
+            arquivo_url: urlData.publicUrl,
             ordem: i,
           });
 

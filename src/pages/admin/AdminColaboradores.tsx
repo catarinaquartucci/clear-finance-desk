@@ -1,6 +1,6 @@
 import { useState, useMemo } from "react";
 import { Plus, Users, UserCheck, Shield, Upload, DollarSign, Download } from "lucide-react";
-import ExcelJS from "exceljs";
+import * as XLSX from "xlsx";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { ColaboradorForm } from "@/components/Colaboradores/ColaboradorForm";
@@ -73,7 +73,7 @@ const AdminColaboradores = () => {
     return filteredColaboradores.reduce((sum, c) => sum + (c.remuneracao || 0), 0);
   }, [filteredColaboradores]);
 
-  const handleExportExcel = async () => {
+  const handleExportExcel = () => {
     const formatDate = (dateStr: string | null) => {
       if (!dateStr) return "";
       const date = new Date(dateStr);
@@ -100,29 +100,12 @@ const AdminColaboradores = () => {
       "Status": c.ativo ? "Ativo" : "Inativo",
     }));
 
-    const workbook = new ExcelJS.Workbook();
-    const worksheet = workbook.addWorksheet("Colaboradores");
+    const worksheet = XLSX.utils.json_to_sheet(exportData);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, "Colaboradores");
     
-    if (exportData.length > 0) {
-      const headers = Object.keys(exportData[0]);
-      worksheet.addRow(headers);
-      const headerRow = worksheet.getRow(1);
-      headerRow.font = { bold: true };
-      
-      exportData.forEach(row => {
-        worksheet.addRow(Object.values(row));
-      });
-    }
-    
-    const buffer = await workbook.xlsx.writeBuffer();
-    const blob = new Blob([buffer], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
     const timestamp = new Date().toISOString().split("T")[0];
-    a.href = url;
-    a.download = `colaboradores_${timestamp}.xlsx`;
-    a.click();
-    URL.revokeObjectURL(url);
+    XLSX.writeFile(workbook, `colaboradores_${timestamp}.xlsx`);
   };
 
   return (

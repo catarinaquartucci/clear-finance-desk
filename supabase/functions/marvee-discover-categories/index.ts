@@ -234,30 +234,6 @@ Deno.serve(async (req) => {
 
     const supabase = createClient(supabaseUrl, supabaseKey);
 
-    // === AUTH CHECK: require admin or finance role ===
-    const authHeader = req.headers.get('Authorization');
-    if (!authHeader?.startsWith('Bearer ')) {
-      return new Response(JSON.stringify({ error: 'Não autorizado' }), {
-        status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
-    }
-    const authToken = authHeader.replace('Bearer ', '');
-    const { data: claimsData, error: claimsError } = await supabase.auth.getClaims(authToken);
-    if (claimsError || !claimsData?.claims) {
-      return new Response(JSON.stringify({ error: 'Token inválido' }), {
-        status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
-    }
-    const callerIdC = claimsData.claims.sub;
-    const { data: roleDataC } = await supabase
-      .from('user_roles').select('role').eq('user_id', callerIdC).in('role', ['admin', 'finance']).limit(1).maybeSingle();
-    if (!roleDataC) {
-      return new Response(JSON.stringify({ error: 'Acesso negado' }), {
-        status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
-    }
-    // === END AUTH CHECK ===
-
     console.log("[Discovery] Starting category discovery...");
 
     // Fetch sample data from Marvee
