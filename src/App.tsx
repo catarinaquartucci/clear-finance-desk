@@ -1,3 +1,4 @@
+import { lazy, Suspense } from "react";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -13,35 +14,39 @@ import { AdminGuard } from "./components/guards/AdminGuard";
 import { FinanceLayout } from "./components/finance/layout/FinanceLayout";
 import { AdminLayout } from "./components/admin/layout/AdminLayout";
 import { BirthdayPopup } from "./components/Birthday/BirthdayPopup";
-import Index from "./pages/Index";
-import Solicitacoes from "./pages/Solicitacoes";
-import NotasFiscais from "./pages/NotasFiscais";
-import Regras from "./pages/Regras";
+import ErrorBoundary from "./components/ErrorBoundary";
 import Auth from "./pages/Auth";
+import Regras from "./pages/Regras";
 import NotFound from "./pages/NotFound";
 
-// Admin pages
-import AdminDashboard from "./pages/admin/AdminDashboard";
-import AdminColaboradores from "./pages/admin/AdminColaboradores";
-import AdminEquipamentos from "./pages/admin/AdminEquipamentos";
-import AdminAutomacoes from "./pages/admin/AdminAutomacoes";
-import AdminConfiguracoes from "./pages/admin/AdminConfiguracoes";
+// Lazy-loaded pages
+const Index = lazy(() => import("./pages/Index"));
+const Solicitacoes = lazy(() => import("./pages/Solicitacoes"));
+const NotasFiscais = lazy(() => import("./pages/NotasFiscais"));
 
-// Finance pages
-import Planejamento from "./pages/financeiro/Planejamento";
-import FluxoCaixa from "./pages/financeiro/FluxoCaixa";
-import AnaliseFinanceira from "./pages/financeiro/AnaliseFinanceira";
-import Impostos from "./pages/financeiro/Impostos";
-import MetasVendas from "./pages/financeiro/MetasVendas";
-import Bonus from "./pages/financeiro/Bonus";
-import Distribuicao from "./pages/financeiro/Distribuicao";
-import Cadastros from "./pages/financeiro/Cadastros";
-import ContasPagar from "./pages/financeiro/ContasPagar";
-import ContasReceber from "./pages/financeiro/ContasReceber";
-import Conciliacao from "./pages/financeiro/Conciliacao";
-import Relatorios from "./pages/financeiro/Relatorios";
-import EmissaoNF from "./pages/financeiro/EmissaoNF";
-import BoletosPage from "./pages/financeiro/Boletos";
+// Admin pages (lazy)
+const AdminDashboard = lazy(() => import("./pages/admin/AdminDashboard"));
+const AdminColaboradores = lazy(() => import("./pages/admin/AdminColaboradores"));
+const AdminEquipamentos = lazy(() => import("./pages/admin/AdminEquipamentos"));
+const AdminAutomacoes = lazy(() => import("./pages/admin/AdminAutomacoes"));
+const AdminConfiguracoes = lazy(() => import("./pages/admin/AdminConfiguracoes"));
+
+// Finance pages (lazy)
+const Planejamento = lazy(() => import("./pages/financeiro/Planejamento"));
+const FluxoCaixa = lazy(() => import("./pages/financeiro/FluxoCaixa"));
+const AnaliseFinanceira = lazy(() => import("./pages/financeiro/AnaliseFinanceira"));
+const Impostos = lazy(() => import("./pages/financeiro/Impostos"));
+const MetasVendas = lazy(() => import("./pages/financeiro/MetasVendas"));
+const Bonus = lazy(() => import("./pages/financeiro/Bonus"));
+const Distribuicao = lazy(() => import("./pages/financeiro/Distribuicao"));
+const Cadastros = lazy(() => import("./pages/financeiro/Cadastros"));
+const ContasPagar = lazy(() => import("./pages/financeiro/ContasPagar"));
+const ContasReceber = lazy(() => import("./pages/financeiro/ContasReceber"));
+const Conciliacao = lazy(() => import("./pages/financeiro/Conciliacao"));
+const Relatorios = lazy(() => import("./pages/financeiro/Relatorios"));
+const EmissaoNF = lazy(() => import("./pages/financeiro/EmissaoNF"));
+const BoletosPage = lazy(() => import("./pages/financeiro/Boletos"));
+
 const queryClient = new QueryClient();
 
 const App = () => (
