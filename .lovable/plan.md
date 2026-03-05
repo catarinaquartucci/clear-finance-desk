@@ -1,79 +1,41 @@
-# Despesas Recorrentes - Gerador Automatico de Contas a Pagar
 
-## O que sera criado
 
-Uma funcionalidade de "Despesas Recorrentes" que permite cadastrar uma despesa uma unica vez e gerar automaticamente as contas a pagar para os proximos meses desejados.
+## Diagnóstico Completo
 
-Permitir edição de contas já cadastradas para que tenham essa mesma opção
+Identifiquei **dois problemas simultâneos** causando o bloqueio total:
 
----
+### Problema 1: Email provider continua desabilitado
+Os logs do backend confirmam que o provedor de email está **desabilitado novamente** (erro `email_provider_disabled`). Já reativei duas vezes, mas algo está revertendo a configuração (possivelmente um deploy/restart do serviço). Preciso reativar mais uma vez.
 
-## Como vai funcionar
+### Problema 2: URL publicada desatualizada
+A mudança para login somente via Google foi feita no código de desenvolvimento, mas a **URL publicada** (`clear-finance-desk.lovable.app`) ainda tem a versão antiga com formulário de email/senha. Precisa ser republicada após as correções.
 
-1. Na tela de **Contas a Pagar**, um novo botao "Despesa Recorrente" abre um formulario especial
-2. O usuario preenche os dados da despesa (descricao, valor, fornecedor, centro de custo, etc.)
-3. Define a **recorrencia**: mensal, e por quantos meses (ex: 12 meses)
-4. Define o **dia do vencimento** (ex: dia 10 de cada mes)
-5. Ao salvar, o sistema gera todas as contas a pagar de uma vez, com as datas de vencimento corretas
+### Problema 3: Google OAuth no iframe
+O Google bloqueia autenticação dentro de iframes por segurança (`ERR_BLOCKED_BY_RESPONSE`). No preview do Lovable, o login Google **nunca funcionará**. Funciona apenas na URL publicada ou no preview aberto em aba separada.
 
-Isso elimina a necessidade de cadastrar um por um.
+### Correções
 
----
+**1. Reativar email provider no backend**
+- Usar `configure-auth` para reabilitar o provedor de email. Mesmo usando apenas Google na UI, o provedor de email precisa estar ativo para que o sistema de autenticação processe tokens corretamente após o OAuth.
 
-## Mudancas Tecnicas
+**2. Garantir vinculação automática do colaborador após Google login**
+- Atualmente, quando um usuário faz login via Google, o trigger `handle_new_user_profile` cria o perfil, e o trigger `handle_admin_user` adiciona role de admin para emails específicos.
+- Mas a **vinculação com a tabela `colaboradores`** (`vincular_user_colaborador`) não acontece automaticamente. Preciso adicionar lógica no `Auth.tsx` para chamar `vincular_user_colaborador` após o primeiro login Google, garantindo que o colaborador seja reconhecido e receba as permissões corretas (admin, finance, etc.).
 
-### 1. Nova tabela `recurring_expenses`
+**3. Republicar o site**
+- Após as correções, o site precisa ser republicado para que a URL `clear-finance-desk.lovable.app` reflita o login Google-only.
 
-Armazena o modelo da despesa recorrente para referencia futura.
+### Arquivos a Modificar
+- **Backend**: Reativar email provider via `configure-auth`
+- `src/pages/Auth.tsx`: Adicionar lógica de vinculação automática pós-login Google (chamar `vincular_user_colaborador` quando detectar primeiro acesso)
+- `src/contexts/AuthContext.tsx`: Adicionar tentativa de vinculação automática após `onAuthStateChange` com evento `SIGNED_IN`
 
-```text
-Campos:
-- id, description, amount, supplier_id, cost_center_id, bank_account_id
-- company_id, payment_method, chart_account_id
-- frequency (mensal)
-- day_of_month (dia do vencimento)
-- start_date, end_date (periodo de vigencia)
-- active (pode pausar/reativar)
-- created_at, updated_at
-```
+### Fluxo Pós-Correção
+1. Usuário acessa `clear-finance-desk.lovable.app`
+2. Vê botão "Entrar com Google"
+3. Faz login com conta Google
+4. Sistema cria perfil automaticamente (trigger `handle_new_user_profile`)
+5. Sistema vincula ao colaborador existente (chamada a `vincular_user_colaborador`)
+6. Roles são sincronizadas automaticamente (triggers `sync_admin_role_on_link`, `sync_finance_role_on_link`, etc.)
+7. Usuário é redirecionado para `/admin` ou `/solicitacoes` conforme suas permissões
 
-RLS: Acesso para admin e finance (mesmo padrao de payables).
-
-### 2. Componente `RecurringExpenseForm.tsx`
-
-Novo dialog com os mesmos campos do `PayableForm` + campos extras:
-
-- Dia do vencimento (1-28)
-- Quantidade de meses OU data final
-- Preview mostrando as datas que serao geradas
-
-### 3. Logica de geracao em lote
-
-Ao salvar, o sistema:
-
-- Cria o registro na tabela `recurring_expenses` (modelo)
-- Gera N registros na tabela `payables` existente, um para cada mes, com `recurring_expense_id` como referencia
-
-### 4. Coluna extra na tabela `payables`
-
-Adicionar `recurring_expense_id` (uuid, nullable) para rastrear quais contas vieram de uma recorrencia.
-
-### 5. Alteracoes na interface
-
-`**PayablesList.tsx`:**
-
-- Novo botao "Despesa Recorrente" ao lado de "Nova Conta"
-- Badge "Recorrente" nas contas geradas por recorrencia
-
-**Novo componente `RecurringExpenseForm.tsx`:**
-
-- Formulario com campos da despesa + configuracao de recorrencia
-- Preview das datas antes de confirmar
-- Botao "Gerar X contas"
-
-### 6. Arquivos envolvidos
-
-- **Novo**: `src/components/finance/payables/RecurringExpenseForm.tsx`
-- **Modificado**: `src/components/finance/payables/PayablesList.tsx` (botao + badge)
-- **Modificado**: `src/hooks/usePayables.ts` (funcao para criar em lote)
-- **Migracao**: Criar tabela `recurring_expenses` + coluna `recurring_expense_id` em `payables`
