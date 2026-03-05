@@ -79,9 +79,7 @@ export const useColaboradorDocumentos = (colaboradorId: string | undefined) => {
 
       if (uploadError) throw uploadError;
 
-      const { data: urlData } = supabase.storage
-        .from("colaboradores-docs")
-        .getPublicUrl(fileName);
+      // Store only the path, not a public URL (bucket is private, use signed URLs to access)
 
       const { data, error } = await supabase
         .from("colaborador_documentos")

@@ -22,6 +22,10 @@ interface AnexosPopoverProps {
 }
 
 const extractStoragePath = (url: string): string => {
+  // If it's already a plain path (not a URL), return as-is
+  if (!url.startsWith('http')) {
+    return url;
+  }
   try {
     const urlObj = new URL(url);
     const pathname = urlObj.pathname;
