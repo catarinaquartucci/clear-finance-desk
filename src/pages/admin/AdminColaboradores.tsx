@@ -73,7 +73,15 @@ const AdminColaboradores = () => {
     return filteredColaboradores.reduce((sum, c) => sum + (c.remuneracao || 0), 0);
   }, [filteredColaboradores]);
 
-  const handleExportExcel = () => {
+  const handleExportExcel = async () => {
+    let XLSX: any;
+    try {
+      XLSX = await import("xlsx");
+    } catch {
+      toast({ title: "Erro", description: "Não foi possível carregar módulo de planilha. Tente novamente.", variant: "destructive" });
+      return;
+    }
+
     const formatDate = (dateStr: string | null) => {
       if (!dateStr) return "";
       const date = new Date(dateStr);

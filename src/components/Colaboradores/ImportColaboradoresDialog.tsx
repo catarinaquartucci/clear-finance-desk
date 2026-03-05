@@ -146,10 +146,9 @@ export const ImportColaboradoresDialog = ({
   const [parseErrors, setParseErrors] = useState<string[]>([]);
   const [isDragging, setIsDragging] = useState(false);
 
-  const parseExcelDate = (value: unknown): string => {
+  const parseExcelDate = (value: unknown, XLSX: any): string => {
     if (!value) return "";
     
-    // Se for número (data do Excel)
     if (typeof value === "number") {
       const date = XLSX.SSF.parse_date_code(value);
       if (date) {
@@ -157,14 +156,11 @@ export const ImportColaboradoresDialog = ({
       }
     }
     
-    // Se for string
     if (typeof value === "string") {
-      // Tentar converter dd/mm/yyyy para yyyy-mm-dd
       const brDateMatch = value.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
       if (brDateMatch) {
         return `${brDateMatch[3]}-${brDateMatch[2].padStart(2, "0")}-${brDateMatch[1].padStart(2, "0")}`;
       }
-      // Se já estiver no formato yyyy-mm-dd
       if (/^\d{4}-\d{2}-\d{2}$/.test(value)) {
         return value;
       }
@@ -173,10 +169,18 @@ export const ImportColaboradoresDialog = ({
     return String(value);
   };
 
-  const parseFile = useCallback((file: File) => {
+  const parseFile = useCallback(async (file: File) => {
     const reader = new FileReader();
     setFileName(file.name);
     setParseErrors([]);
+
+    let XLSX: any;
+    try {
+      XLSX = await import("xlsx");
+    } catch {
+      toast({ title: "Erro", description: "Não foi possível carregar módulo de planilha. Tente novamente.", variant: "destructive" });
+      return;
+    }
     
     reader.onload = (e) => {
       try {
@@ -248,7 +252,7 @@ export const ImportColaboradoresDialog = ({
                 // Converter para boolean
                 (colaborador as any)[mappedField] = value === true || value === "true" || value === "TRUE" || value === "sim" || value === "1" || value === "Sim";
               } else if (mappedField === "data_inicio_contrato" || mappedField === "data_nascimento" || mappedField === "data_fim_contrato") {
-                colaborador[mappedField] = parseExcelDate(value);
+                colaborador[mappedField] = parseExcelDate(value, XLSX);
               } else {
                 (colaborador as any)[mappedField] = String(value || "").trim();
               }
