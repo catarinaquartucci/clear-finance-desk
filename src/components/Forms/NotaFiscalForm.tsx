@@ -206,12 +206,8 @@ export const NotaFiscalForm = () => {
 
         if (uploadError) throw uploadError;
 
-        const { data: urlData } = supabase.storage
-          .from('notas-fiscais')
-          .getPublicUrl(filePath);
-
         if (i === 0) {
-          firstUrl = urlData.publicUrl;
+          firstUrl = filePath;
         }
 
         const descricaoFinal = getAnexoDescricaoFinal(anexo);
@@ -220,7 +216,7 @@ export const NotaFiscalForm = () => {
           .insert({
             nota_fiscal_id: notaFiscal.id,
             descricao: descricaoFinal,
-            arquivo_url: urlData.publicUrl,
+            arquivo_url: filePath,
             ordem: i,
           });
 
