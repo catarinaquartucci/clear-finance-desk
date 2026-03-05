@@ -1,79 +1,58 @@
-# Despesas Recorrentes - Gerador Automatico de Contas a Pagar
 
-## O que sera criado
+Objetivo: destravar seu acesso imediatamente no publicado e no preview do editor, tratando o problema como dois bloqueios separados (OAuth do app + acesso via token do preview).
 
-Uma funcionalidade de "Despesas Recorrentes" que permite cadastrar uma despesa uma unica vez e gerar automaticamente as contas a pagar para os proximos meses desejados.
+Diagnóstico consolidado (com base no que verifiquei):
+1) Seu usuário `raquel@vantari.com.br` existe e já está com `admin` + `finance` na base de teste.
+2) O colaborador dessa conta já está vinculado (`user_id` preenchido).
+3) O erro atual acontece no clique do Google (“Erro ao entrar com Google”), ou seja, falha antes de chegar na etapa de permissão no app.
+4) No preview do editor existe um token de acesso na URL (`__lovable_token`) e hoje o redirect do Google não preserva esse contexto.
+5) Existem funções de automação de perfil/role, mas não há trigger em `auth.users` para executá-las automaticamente.
 
-Permitir edição de contas já cadastradas para que tenham essa mesma opção
+Do I know what the issue is?
+- Sim, com alta confiança: há uma combinação de (a) fluxo OAuth frágil entre preview/publicado e (b) sincronização de acesso incompleta no backend para novos/logins reprocessados.
 
----
+Plano de correção (implementação):
+1) Fortalecer o login Google no frontend (falha visível + redirect robusto)
+- Arquivo: `src/pages/Auth.tsx`
+- Ajustar `redirect_uri` para retornar sempre em `/auth` e, no preview, preservar parâmetros necessários.
+- Exibir erro técnico real no toast (mensagem/código) para não ficar “erro genérico”.
+- Adicionar fallback controlado para reabrir fluxo quando houver erro transitório de OAuth.
 
-## Como vai funcionar
+2) Tornar o vínculo e sincronização idempotentes no login
+- Arquivo: `src/contexts/AuthContext.tsx`
+- No `onAuthStateChange` e no bootstrap (`getSession`), executar:
+  - tentativa de vínculo por e-mail (`vincular_user_colaborador`);
+  - refresh de roles em sequência, com retry curto.
+- Evitar estado “travado em loading” quando der erro parcial.
 
-1. Na tela de **Contas a Pagar**, um novo botao "Despesa Recorrente" abre um formulario especial
-2. O usuario preenche os dados da despesa (descricao, valor, fornecedor, centro de custo, etc.)
-3. Define a **recorrencia**: mensal, e por quantos meses (ex: 12 meses)
-4. Define o **dia do vencimento** (ex: dia 10 de cada mes)
-5. Ao salvar, o sistema gera todas as contas a pagar de uma vez, com as datas de vencimento corretas
+3) Corrigir automações de backend faltantes para novos logins
+- Migração SQL:
+  - criar trigger em `auth.users` para `handle_new_user_profile`;
+  - criar trigger em `auth.users` para `handle_admin_user`;
+- Resultado: novos acessos deixam de depender de execução manual para perfil/admin seed.
 
-Isso elimina a necessidade de cadastrar um por um.
+4) Garantir consistência entre ambientes (teste x live)
+- Aplicar configuração de autenticação no ambiente correto antes de validar (provedor e fluxo OAuth).
+- Publicar frontend após os ajustes (pois mudanças de UI/cliente só entram no live após update).
 
----
+5) Validação de desbloqueio (critério de aceite)
+- Publicado (aba externa): login com `raquel@vantari.com.br` entra sem toast de erro e redireciona para `/admin`.
+- Preview do editor: acesso não fica preso em tela de login externa; rota `/auth` do app abre e autentica.
+- Pós-login: `useAuth` mostra `isAdmin=true`, `canEditAdmin=true`.
 
-## Mudancas Tecnicas
+Detalhes técnicos (resumo objetivo):
+- Frontend:
+  - `Auth.tsx`: redirect/callback resiliente + erro detalhado.
+  - `AuthContext.tsx`: vínculo/roles com retry e sem deadlock.
+- Backend:
+  - adicionar triggers em `auth.users` para funções já existentes.
+- Segurança:
+  - sem bypass client-side de admin;
+  - permissões continuam server-side via `user_roles` + RLS.
 
-### 1. Nova tabela `recurring_expenses`
-
-Armazena o modelo da despesa recorrente para referencia futura.
-
-```text
-Campos:
-- id, description, amount, supplier_id, cost_center_id, bank_account_id
-- company_id, payment_method, chart_account_id
-- frequency (mensal)
-- day_of_month (dia do vencimento)
-- start_date, end_date (periodo de vigencia)
-- active (pode pausar/reativar)
-- created_at, updated_at
-```
-
-RLS: Acesso para admin e finance (mesmo padrao de payables).
-
-### 2. Componente `RecurringExpenseForm.tsx`
-
-Novo dialog com os mesmos campos do `PayableForm` + campos extras:
-
-- Dia do vencimento (1-28)
-- Quantidade de meses OU data final
-- Preview mostrando as datas que serao geradas
-
-### 3. Logica de geracao em lote
-
-Ao salvar, o sistema:
-
-- Cria o registro na tabela `recurring_expenses` (modelo)
-- Gera N registros na tabela `payables` existente, um para cada mes, com `recurring_expense_id` como referencia
-
-### 4. Coluna extra na tabela `payables`
-
-Adicionar `recurring_expense_id` (uuid, nullable) para rastrear quais contas vieram de uma recorrencia.
-
-### 5. Alteracoes na interface
-
-`**PayablesList.tsx`:**
-
-- Novo botao "Despesa Recorrente" ao lado de "Nova Conta"
-- Badge "Recorrente" nas contas geradas por recorrencia
-
-**Novo componente `RecurringExpenseForm.tsx`:**
-
-- Formulario com campos da despesa + configuracao de recorrencia
-- Preview das datas antes de confirmar
-- Botao "Gerar X contas"
-
-### 6. Arquivos envolvidos
-
-- **Novo**: `src/components/finance/payables/RecurringExpenseForm.tsx`
-- **Modificado**: `src/components/finance/payables/PayablesList.tsx` (botao + badge)
-- **Modificado**: `src/hooks/usePayables.ts` (funcao para criar em lote)
-- **Migracao**: Criar tabela `recurring_expenses` + coluna `recurring_expense_id` em `payables`
+Ordem de execução recomendada:
+1) Migração de triggers.
+2) Ajustes em `Auth.tsx`.
+3) Ajustes em `AuthContext.tsx`.
+4) Publicar atualização.
+5) Teste E2E no publicado e no preview.
