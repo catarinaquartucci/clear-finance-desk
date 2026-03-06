@@ -9,7 +9,7 @@ import { ArrowDown, ArrowUp, AlertTriangle, TrendingUp, Wallet, BarChart3 } from
 export const ExecutiveSummary = () => {
   const [dateFrom, setDateFrom] = useState<Date>();
   const [dateTo, setDateTo] = useState<Date>();
-  const [companyId, setCompanyId] = useState("all");
+  const [companyId, setCompanyId] = useState("3d37326f-bedc-4a16-b81f-0213c826d423");
 
   const df = dateFrom ? format(dateFrom, "yyyy-MM-dd") : undefined;
   const dt = dateTo ? format(dateTo, "yyyy-MM-dd") : undefined;

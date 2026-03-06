@@ -1,4 +1,6 @@
 import { useMemo } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
 import { format, subMonths, startOfYear, endOfYear } from "date-fns";
 import { ptBR } from "date-fns/locale";
 
@@ -283,29 +285,58 @@ export const useFinancialAnalysis = (
     ].filter(item => item.value > 0);
   }, [planningData, selectedYear]);
 
-  // Expense composition
+  // Expense composition from payables grouped by notes (tipo de despesa)
+  const VANTARI_ID = "3d37326f-bedc-4a16-b81f-0213c826d423";
+  
+  const { data: payablesByType } = useQuery({
+    queryKey: ["payables-by-type", selectedYear],
+    queryFn: async () => {
+      const yearStart = `${selectedYear}-01-01`;
+      const yearEnd = `${selectedYear}-12-31`;
+      const { data, error } = await supabase
+        .from("payables")
+        .select("amount, notes")
+        .eq("company_id", VANTARI_ID)
+        .gte("due_date", yearStart)
+        .lte("due_date", yearEnd);
+      if (error) throw error;
+      return data;
+    },
+  });
+
+  const EXPENSE_COLORS = [
+    'hsl(0 84% 60%)',      // red
+    'hsl(25 95% 53%)',     // orange  
+    'hsl(45 93% 47%)',     // amber
+    'hsl(142 76% 36%)',    // green
+    'hsl(199 89% 48%)',    // blue
+    'hsl(262 83% 58%)',    // violet
+    'hsl(330 81% 60%)',    // pink
+    'hsl(172 66% 50%)',    // teal
+    'hsl(221 83% 53%)',    // indigo
+    'hsl(15 75% 50%)',     // brown
+    'hsl(280 65% 55%)',    // purple
+    'hsl(60 70% 45%)',     // yellow-green
+  ];
+
   const expenseComposition = useMemo(() => {
-    if (!planningData) return [];
+    if (!payablesByType || payablesByType.length === 0) return [];
 
-    let operacional = 0, taxaHubla = 0, impostos = 0, distribuicao = 0;
+    const grouped = new Map<string, number>();
+    payablesByType.forEach(p => {
+      const category = (p.notes || "Outros").trim().toUpperCase();
+      grouped.set(category, (grouped.get(category) || 0) + Number(p.amount));
+    });
 
-    planningData
-      .filter(p => p.month.startsWith(selectedYear.toString()))
-      .forEach(p => {
-        operacional += (Number(p.expense) || 0) + (Number(p.planned_expense) || 0) + 
-                       (Number(p.other_expense) || 0) + (Number(p.forecast_expense) || 0);
-        taxaHubla += Number(p.platform_fee) || 0;
-        impostos += Number(p.tax) || 0;
-        distribuicao += Number(p.distribution) || 0;
-      });
-
-    return [
-      { name: 'Operacionais', value: operacional, fill: 'hsl(var(--destructive))' },
-      { name: 'Taxa Hubla', value: taxaHubla, fill: 'hsl(var(--chart-5))' },
-      { name: 'Impostos', value: impostos, fill: 'hsl(var(--chart-2))' },
-      { name: 'Distribuição', value: distribuicao, fill: 'hsl(var(--chart-3))' },
-    ].filter(item => item.value > 0);
-  }, [planningData, selectedYear]);
+    return Array.from(grouped.entries())
+      .sort((a, b) => b[1] - a[1])
+      .map(([name, value], i) => ({
+        name,
+        value,
+        fill: EXPENSE_COLORS[i % EXPENSE_COLORS.length],
+      }))
+      .filter(item => item.value > 0);
+  }, [payablesByType]);
 
   // Scenario projections
   const scenarioProjections = useMemo((): ScenarioProjection[] => {

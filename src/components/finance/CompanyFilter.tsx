@@ -33,7 +33,7 @@ export const CompanyFilter = ({
           .filter((c) => c.active)
           .map((c) => (
             <SelectItem key={c.id} value={c.id}>
-              {c.name}
+              {c.name}{c.type === 'matriz' ? ' (Sede)' : ''}
             </SelectItem>
           ))}
       </SelectContent>
