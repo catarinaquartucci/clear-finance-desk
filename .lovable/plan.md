@@ -1,113 +1,33 @@
 
 
-# Remover Devolucao + Novo Modulo de Relatorios Avancados
+# Permitir PDF e TXT no upload de conciliação bancária
 
-## 1. Remover aba "Devolucao" da pagina Solicitacoes
+## Situação atual
+- O input aceita: `.ofx, .ofc, .csv, .txt`
+- O parser (`bankStatementParser.ts`) trata OFX, OFC, CSV e TXT
+- PDF **não** é aceito nem no input nem no parser
 
-**Arquivo**: `src/pages/Solicitacoes.tsx`
-- Remover a tab "Devolucao" e seu conteudo (`DevolucaoForm`)
-- Remover import de `DevolucaoForm` e `TrendingUp`
-- Ajustar grid de tabs de 4 para 3 colunas
-- Na aba "Minhas Solicitacoes", remover `MyDevolucoesList`
+## Plano
 
-**Arquivo**: `src/pages/admin/AdminDashboard.tsx`
-- Remover o AccordionItem de "Devoluções" e imports relacionados (`DevolucoesList`, `useDevolucoes`)
+### 1. Adicionar `.pdf` ao accept do input
+Em `ImportStatementDialog.tsx`, linha 93: adicionar `.pdf` ao atributo `accept`.
 
----
+### 2. Instalar `pdfjs-dist` para extração de texto client-side
+Necessário para ler o conteúdo textual do PDF no navegador antes de passá-lo ao parser CSV/texto existente.
 
-## 2. Reformular pagina de Relatorios Financeiros
+### 3. Criar função `parsePDF` em `bankStatementParser.ts`
+- Usar `pdfjs-dist` para extrair texto de todas as páginas
+- Concatenar o texto extraído e tentar parsear como CSV (detectando colunas data/valor/descrição)
+- Reutilizar o parser CSV genérico existente sobre o texto extraído
 
-**Arquivo**: `src/pages/financeiro/Relatorios.tsx` - Reescrever com novas abas
+### 4. Atualizar `parseStatement` para tratar extensão `.pdf`
+Adicionar case `.pdf` que lê o arquivo como `ArrayBuffer` (em vez de `.text()`), extrai texto via pdfjs, e passa ao parser CSV.
 
-### Novas abas:
+### 5. Ajustar `ImportStatementDialog` para ler arquivo como ArrayBuffer quando for PDF
+O `handleFile` atualmente usa `file.text()`. Para PDFs, precisará usar `file.arrayBuffer()` e passar ao novo fluxo de parsing.
 
-| Aba | Descricao | Filtros |
-|-----|-----------|---------|
-| Contas a Pagar | Listagem de payables com status open/overdue | Periodo (de-ate) + Filial |
-| Contas a Receber | Listagem de receivables com status open/overdue | Periodo (de-ate) + Filial |
-| Contas Pagas | Payables ja pagos com data de pagamento | Periodo (de-ate) + Filial |
-| Gastos por Centro de Custo | Dashboard com grafico de pizza/barras + tabela | Periodo + Filial |
-| DRE | Mantido como esta | Ano |
-| Aging | Mantido como esta | - |
-
-### Componentes novos:
-
-- `src/components/finance/reports/PayablesReport.tsx` - Tabela de contas a pagar com filtros de periodo e filial, botoes de exportar Excel e PDF
-- `src/components/finance/reports/ReceivablesReport.tsx` - Tabela de contas a receber com filtros
-- `src/components/finance/reports/PaidReport.tsx` - Contas pagas com data de pagamento
-- `src/components/finance/reports/CostCenterDashboard.tsx` - Dashboard com grafico de rosca (recharts PieChart) mostrando distribuicao de gastos por centro de custo + tabela detalhada
-- `src/components/finance/reports/ReportFilters.tsx` - Componente reutilizavel com DatePicker "De" e "Ate" + CompanyFilter + botoes de exportar
-
-### Exportacao:
-
-- **Excel**: Usar biblioteca `xlsx` (ja instalada) para gerar planilhas
-- **PDF**: Gerar via `window.print()` com CSS de impressao dedicado, ou criar uma funcao que monta uma tabela HTML e abre em nova janela para imprimir como PDF
-
----
-
-## 3. Dashboards e Relatorios Sugeridos (incluidos na implementacao)
-
-Alem dos solicitados, incluir as seguintes abas extras no modulo de Relatorios:
-
-1. **Fluxo Mensal** - Grafico de barras comparando receitas vs despesas mes a mes (usando dados de payables/receivables agrupados por mes). Filtro por ano e filial.
-
-2. **Top Fornecedores** - Ranking dos maiores fornecedores por valor pago, com grafico de barras horizontal. Filtro por periodo e filial.
-
-3. **Resumo Executivo** - Card com KPIs: total a pagar, total a receber, saldo liquido, taxa de inadimplencia, ticket medio. Exportavel em PDF como relatorio executivo de uma pagina.
-
-Estes serao adicionados como abas extras no mesmo componente de Relatorios.
-
----
-
-## 4. Detalhes Tecnicos
-
-### Hooks atualizados/novos:
-
-**`src/hooks/useFinancialReports.ts`** - Adicionar novos hooks:
-- `usePayablesReport(dateFrom, dateTo, companyId)` - Busca payables com joins em suppliers e cost_centers, filtrando por periodo e company_id
-- `useReceivablesReport(dateFrom, dateTo, companyId)` - Idem para receivables com join em customers
-- `usePaidReport(dateFrom, dateTo, companyId)` - Payables com status "paid", usando paid_date como filtro de periodo
-- `useCostCenterDashboard(dateFrom, dateTo, companyId)` - Agrupa payables por cost_center_id, retorna totais para grafico
-- `useMonthlyFlowReport(year, companyId)` - Agrupa receitas e despesas por mes
-- `useExecutiveSummary(dateFrom, dateTo, companyId)` - Calcula KPIs agregados
-
-### Exportacao Excel (usando xlsx):
-
-```typescript
-import * as XLSX from "xlsx";
-
-function exportToExcel(data: any[], filename: string) {
-  const ws = XLSX.utils.json_to_sheet(data);
-  const wb = XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(wb, ws, "Relatório");
-  XLSX.writeFile(wb, `${filename}.xlsx`);
-}
-```
-
-### Exportacao PDF:
-
-Criar funcao `exportToPDF` que monta HTML com estilos inline, abre em nova janela e chama `window.print()`.
-
-### Arquivos modificados:
-
-- `src/pages/Solicitacoes.tsx` - Remover tab devolucao
-- `src/pages/admin/AdminDashboard.tsx` - Remover secao devoluções
-- `src/pages/financeiro/Relatorios.tsx` - Reescrever com todas as novas abas
-- `src/hooks/useFinancialReports.ts` - Adicionar novos hooks
-
-### Arquivos novos:
-
-- `src/components/finance/reports/ReportFilters.tsx`
-- `src/components/finance/reports/PayablesReport.tsx`
-- `src/components/finance/reports/ReceivablesReport.tsx`
-- `src/components/finance/reports/PaidReport.tsx`
-- `src/components/finance/reports/CostCenterDashboard.tsx`
-- `src/components/finance/reports/MonthlyFlowChart.tsx`
-- `src/components/finance/reports/TopSuppliersChart.tsx`
-- `src/components/finance/reports/ExecutiveSummary.tsx`
-- `src/lib/exportUtils.ts` - Funcoes utilitarias de exportacao (Excel + PDF)
-
-### Nenhuma mudanca no banco de dados
-
-Todos os dados ja existem nas tabelas `payables`, `receivables`, `suppliers`, `customers`, `cost_centers`. Os novos relatorios sao consultas com filtros sobre dados existentes.
+### Arquivos a editar
+- `src/components/finance/reconciliation/ImportStatementDialog.tsx` — accept + lógica de leitura PDF
+- `src/lib/bankStatementParser.ts` — nova função `parsePDF` + atualização do `parseStatement`
+- `package.json` — adicionar `pdfjs-dist`
 
