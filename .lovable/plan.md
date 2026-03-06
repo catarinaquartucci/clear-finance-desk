@@ -1,113 +1,79 @@
 
 
-# Remover Devolucao + Novo Modulo de Relatorios Avancados
+# Vantari como Sede + Sincronização de Dados no Planejamento + Análise por Tipo de Despesa
 
-## 1. Remover aba "Devolucao" da pagina Solicitacoes
+## 1. Vantari como empresa padrão em todas as telas
 
-**Arquivo**: `src/pages/Solicitacoes.tsx`
-- Remover a tab "Devolucao" e seu conteudo (`DevolucaoForm`)
-- Remover import de `DevolucaoForm` e `TrendingUp`
-- Ajustar grid de tabs de 4 para 3 colunas
-- Na aba "Minhas Solicitacoes", remover `MyDevolucoesList`
+### Alterações
+- Adicionar `defaultCompanyId` ao `AppPreferencesContext` com valor padrão = ID da Vantari (`3d37326f-bedc-4a16-b81f-0213c826d423`)
+- Alterar todos os 7 componentes de relatório que inicializam `companyId` com `"all"` para usar o ID da Vantari como padrão
+- Alterar o `CompanyFilter` para mostrar "Vantari (Sede)" como label quando selecionada
 
-**Arquivo**: `src/pages/admin/AdminDashboard.tsx`
-- Remover o AccordionItem de "Devoluções" e imports relacionados (`DevolucoesList`, `useDevolucoes`)
+**Arquivos a editar:**
+- `src/contexts/AppPreferencesContext.tsx` — novo campo `defaultCompanyId`
+- `src/components/finance/reports/ReceivablesReport.tsx`
+- `src/components/finance/reports/PayablesReport.tsx`
+- `src/components/finance/reports/PaidReport.tsx`
+- `src/components/finance/reports/MonthlyFlowChart.tsx`
+- `src/components/finance/reports/ExecutiveSummary.tsx`
+- `src/components/finance/reports/CostCenterDashboard.tsx`
+- `src/components/finance/reports/TopSuppliersChart.tsx`
 
----
-
-## 2. Reformular pagina de Relatorios Financeiros
-
-**Arquivo**: `src/pages/financeiro/Relatorios.tsx` - Reescrever com novas abas
-
-### Novas abas:
-
-| Aba | Descricao | Filtros |
-|-----|-----------|---------|
-| Contas a Pagar | Listagem de payables com status open/overdue | Periodo (de-ate) + Filial |
-| Contas a Receber | Listagem de receivables com status open/overdue | Periodo (de-ate) + Filial |
-| Contas Pagas | Payables ja pagos com data de pagamento | Periodo (de-ate) + Filial |
-| Gastos por Centro de Custo | Dashboard com grafico de pizza/barras + tabela | Periodo + Filial |
-| DRE | Mantido como esta | Ano |
-| Aging | Mantido como esta | - |
-
-### Componentes novos:
-
-- `src/components/finance/reports/PayablesReport.tsx` - Tabela de contas a pagar com filtros de periodo e filial, botoes de exportar Excel e PDF
-- `src/components/finance/reports/ReceivablesReport.tsx` - Tabela de contas a receber com filtros
-- `src/components/finance/reports/PaidReport.tsx` - Contas pagas com data de pagamento
-- `src/components/finance/reports/CostCenterDashboard.tsx` - Dashboard com grafico de rosca (recharts PieChart) mostrando distribuicao de gastos por centro de custo + tabela detalhada
-- `src/components/finance/reports/ReportFilters.tsx` - Componente reutilizavel com DatePicker "De" e "Ate" + CompanyFilter + botoes de exportar
-
-### Exportacao:
-
-- **Excel**: Usar biblioteca `xlsx` (ja instalada) para gerar planilhas
-- **PDF**: Gerar via `window.print()` com CSS de impressao dedicado, ou criar uma funcao que monta uma tabela HTML e abre em nova janela para imprimir como PDF
-
----
-
-## 3. Dashboards e Relatorios Sugeridos (incluidos na implementacao)
-
-Alem dos solicitados, incluir as seguintes abas extras no modulo de Relatorios:
-
-1. **Fluxo Mensal** - Grafico de barras comparando receitas vs despesas mes a mes (usando dados de payables/receivables agrupados por mes). Filtro por ano e filial.
-
-2. **Top Fornecedores** - Ranking dos maiores fornecedores por valor pago, com grafico de barras horizontal. Filtro por periodo e filial.
-
-3. **Resumo Executivo** - Card com KPIs: total a pagar, total a receber, saldo liquido, taxa de inadimplencia, ticket medio. Exportavel em PDF como relatorio executivo de uma pagina.
-
-Estes serao adicionados como abas extras no mesmo componente de Relatorios.
-
----
-
-## 4. Detalhes Tecnicos
-
-### Hooks atualizados/novos:
-
-**`src/hooks/useFinancialReports.ts`** - Adicionar novos hooks:
-- `usePayablesReport(dateFrom, dateTo, companyId)` - Busca payables com joins em suppliers e cost_centers, filtrando por periodo e company_id
-- `useReceivablesReport(dateFrom, dateTo, companyId)` - Idem para receivables com join em customers
-- `usePaidReport(dateFrom, dateTo, companyId)` - Payables com status "paid", usando paid_date como filtro de periodo
-- `useCostCenterDashboard(dateFrom, dateTo, companyId)` - Agrupa payables por cost_center_id, retorna totais para grafico
-- `useMonthlyFlowReport(year, companyId)` - Agrupa receitas e despesas por mes
-- `useExecutiveSummary(dateFrom, dateTo, companyId)` - Calcula KPIs agregados
-
-### Exportacao Excel (usando xlsx):
-
-```typescript
-import * as XLSX from "xlsx";
-
-function exportToExcel(data: any[], filename: string) {
-  const ws = XLSX.utils.json_to_sheet(data);
-  const wb = XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(wb, ws, "Relatório");
-  XLSX.writeFile(wb, `${filename}.xlsx`);
-}
+### Migration
+Atualizar tipo da Vantari para `matriz`:
+```sql
+UPDATE group_companies SET type = 'matriz' WHERE id = '3d37326f-bedc-4a16-b81f-0213c826d423';
 ```
 
-### Exportacao PDF:
+## 2. Planejamento: sincronizar despesas e receitas (aportes) com dados existentes
 
-Criar funcao `exportToPDF` que monta HTML com estilos inline, abre em nova janela e chama `window.print()`.
+### Dados disponíveis
+- **Despesas (payables):** 390 registros importados da Vantari, março/2026 a junho/2028
+- **Receitas/Aportes (bank_transactions):** TEDs e PIXs recebidos na conta Vantari:
+  - Fev/2026: R$ 272.286
+  - Mar/2026: R$ 224.226
 
-### Arquivos modificados:
+### Lógica de sincronização
+Criar um botão "Sincronizar com Sistema" na página de Planejamento que:
+1. Busca total de `payables` por mês (filtrando `company_id` = Vantari)
+2. Busca total de créditos bancários por mês (excluindo "SALDO" e "RENDIMENTOS")
+3. Faz upsert no `monthly_planning`:
+   - `expense` = total de payables já pagos (status = 'paid') do mês
+   - `planned_expense` = total de payables em aberto (status = 'open') do mês
+   - `revenue` = total de créditos bancários (aportes/TEDs/PIXs) do mês (meses passados)
 
-- `src/pages/Solicitacoes.tsx` - Remover tab devolucao
-- `src/pages/admin/AdminDashboard.tsx` - Remover secao devoluções
-- `src/pages/financeiro/Relatorios.tsx` - Reescrever com todas as novas abas
-- `src/hooks/useFinancialReports.ts` - Adicionar novos hooks
+### Implementação
+- Criar hook `usePlanningSync.ts` que agrega dados de `payables` e `bank_transactions` por mês
+- Adicionar botão de sincronização na página `Planejamento.tsx`
+- Usar `upsertPlanningBatch` existente para gravar os dados
 
-### Arquivos novos:
+**Arquivos a criar/editar:**
+- `src/hooks/usePlanningSync.ts` — novo hook
+- `src/pages/financeiro/Planejamento.tsx` — botão de sync
 
-- `src/components/finance/reports/ReportFilters.tsx`
-- `src/components/finance/reports/PayablesReport.tsx`
-- `src/components/finance/reports/ReceivablesReport.tsx`
-- `src/components/finance/reports/PaidReport.tsx`
-- `src/components/finance/reports/CostCenterDashboard.tsx`
-- `src/components/finance/reports/MonthlyFlowChart.tsx`
-- `src/components/finance/reports/TopSuppliersChart.tsx`
-- `src/components/finance/reports/ExecutiveSummary.tsx`
-- `src/lib/exportUtils.ts` - Funcoes utilitarias de exportacao (Excel + PDF)
+## 3. Análise Financeira: breakdown por tipo de despesa
 
-### Nenhuma mudanca no banco de dados
+### Alteração
+Modificar o `expenseComposition` no `useFinancialAnalysis.ts` para buscar dados de `payables` agrupados por `notes` (tipo de despesa) em vez da composição genérica atual (Operacionais/Taxa Hubla/Impostos/Distribuição).
 
-Todos os dados ja existem nas tabelas `payables`, `receivables`, `suppliers`, `customers`, `cost_centers`. Os novos relatorios sao consultas com filtros sobre dados existentes.
+### Implementação
+- Criar query em `useFinancialAnalysis` que busca `payables` agrupados por `notes` para o ano selecionado, filtrando por Vantari
+- Gerar array de composição com cores distintas para cada categoria (PRÓ LABORE, MARKETING, CAIXINHA, etc.)
+- Manter o pie chart existente (`ExpenseBreakdownPie`) que já aceita dados genéricos
+
+**Arquivos a editar:**
+- `src/hooks/useFinancialAnalysis.ts` — nova lógica de composição
+- `src/pages/financeiro/AnaliseFinanceira.tsx` — passar dados da query
+
+### Resumo de arquivos
+
+| Arquivo | Ação |
+|---------|------|
+| `src/contexts/AppPreferencesContext.tsx` | Adicionar `defaultCompanyId` |
+| 7 componentes de relatório | Default company = Vantari |
+| `src/hooks/usePlanningSync.ts` | Novo hook de sincronização |
+| `src/pages/financeiro/Planejamento.tsx` | Botão sync |
+| `src/hooks/useFinancialAnalysis.ts` | Expense breakdown por tipo |
+| `src/pages/financeiro/AnaliseFinanceira.tsx` | Integrar nova composição |
+| Migration SQL | Vantari type → `matriz` |
 
