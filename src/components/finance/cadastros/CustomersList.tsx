@@ -14,7 +14,7 @@ import { formatCPFCNPJ } from "@/lib/masks";
 
 const emptyForm: CustomerInsert = {
   name: "", document: "", contact_email: "", contact_phone: "",
-  address: "", segment: "", active: true, company_id: null,
+  address: "", segment: "", active: true, company_id: "3d37326f-bedc-4a16-b81f-0213c826d423",
 };
 
 export const CustomersList = () => {
@@ -47,7 +47,7 @@ export const CustomersList = () => {
     }
   };
 
-  const getCompanyName = (id: string | null) => companies.find(c => c.id === id)?.name ?? "—";
+  const getCompanyName = (id: string | null) => id === null ? "Ambas" : (companies.find(c => c.id === id)?.name ?? "—");
 
   const filtered = customers?.filter(c =>
     c.name.toLowerCase().includes(search.toLowerCase()) ||

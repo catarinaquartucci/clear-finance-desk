@@ -26,7 +26,7 @@ export const useCustomers = (companyId?: string) => {
     queryFn: async () => {
       let q = supabase.from("customers").select("*").order("name");
       if (companyId && companyId !== "all") {
-        q = q.eq("company_id", companyId);
+        q = q.or(`company_id.eq.${companyId},company_id.is.null`);
       }
       const { data, error } = await q;
       if (error) throw error;

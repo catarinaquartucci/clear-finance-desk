@@ -28,7 +28,7 @@ export const CompanyFilter = ({
       </SelectTrigger>
       <SelectContent>
         {!formMode && <SelectItem value="all">Todas as filiais</SelectItem>}
-        {formMode && <SelectItem value="none">Nenhuma</SelectItem>}
+        {formMode && <SelectItem value="none">Ambas as filiais</SelectItem>}
         {companies
           .filter((c) => c.active)
           .map((c) => (
