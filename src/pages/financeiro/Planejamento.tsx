@@ -14,7 +14,8 @@ import { useMonthlyPlanning } from "@/hooks/useMonthlyPlanning";
 import { useAIInsights } from "@/hooks/useAIInsights";
 import { useAppPreferences } from "@/contexts/AppPreferencesContext";
 import { useFinancialConfig } from "@/hooks/useFinancialConfig";
-import { TrendingUp, Sparkles, RefreshCw } from "lucide-react";
+import { usePlanningSync } from "@/hooks/usePlanningSync";
+import { TrendingUp, Sparkles, RefreshCw, Download } from "lucide-react";
 import { calculateTaxForMonth, getMonthType, MonthData } from "@/lib/taxCalculations";
 import { parseISO, subMonths, format } from "date-fns";
 
@@ -44,7 +45,8 @@ const Planejamento = () => {
     setFinancialMonth: setSelectedMonth
   } = useAppPreferences();
   const [insightsOpen, setInsightsOpen] = useState(false);
-  const { planningData, isLoading, upsertPlanning } = useMonthlyPlanning();
+  const { planningData, isLoading, upsertPlanning, upsertPlanningBatch } = useMonthlyPlanning();
+  const { syncPlanningData, isSyncing } = usePlanningSync();
   const { 
     hublaFeePercentage, 
     updateHublaFee, 
@@ -187,11 +189,18 @@ const Planejamento = () => {
           </div>
           <Button
             onClick={handleOpenInsights}
-            className="ml-4"
             variant="outline"
           >
             <Sparkles className="h-4 w-4 mr-2" />
             AI Insights
+          </Button>
+          <Button
+            onClick={() => syncPlanningData(upsertPlanningBatch)}
+            variant="outline"
+            disabled={isSyncing}
+          >
+            <Download className={`h-4 w-4 mr-2 ${isSyncing ? 'animate-spin' : ''}`} />
+            {isSyncing ? "Sincronizando..." : "Sincronizar com Sistema"}
           </Button>
         </div>
 
