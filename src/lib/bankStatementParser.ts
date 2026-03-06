@@ -1,4 +1,11 @@
+import * as pdfjsLib from "pdfjs-dist";
 import type { BankTransactionInsert } from "@/hooks/useBankTransactions";
+
+// Use bundled worker
+pdfjsLib.GlobalWorkerOptions.workerSrc = new URL(
+  "pdfjs-dist/build/pdf.worker.min.mjs",
+  import.meta.url
+).toString();
 
 export interface ParseResult {
   transactions: BankTransactionInsert[];
@@ -246,5 +253,31 @@ export function parseStatement(content: string, bankAccountId: string, fileName:
     return parseCSV(content, bankAccountId);
   }
 
-  throw new Error("Formato não suportado. Use OFX, OFC ou CSV.");
+  throw new Error("Formato não suportado. Use OFX, OFC, CSV, PDF ou TXT.");
+}
+
+/**
+ * Parse a PDF bank statement by extracting text and running CSV parser
+ */
+export async function parsePDFStatement(buffer: ArrayBuffer, bankAccountId: string): Promise<ParseResult> {
+  const pdf = await pdfjsLib.getDocument({ data: buffer }).promise;
+  const lines: string[] = [];
+
+  for (let i = 1; i <= pdf.numPages; i++) {
+    const page = await pdf.getPage(i);
+    const content = await page.getTextContent();
+    const pageText = content.items
+      .map((item: any) => item.str)
+      .join(" ");
+    lines.push(pageText);
+  }
+
+  const fullText = lines.join("\n");
+
+  if (!fullText.trim()) {
+    throw new Error("Não foi possível extrair texto do PDF. O arquivo pode ser uma imagem escaneada.");
+  }
+
+  // Try to parse the extracted text as CSV
+  return parseCSV(fullText, bankAccountId);
 }
