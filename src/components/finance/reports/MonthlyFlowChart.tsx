@@ -14,7 +14,7 @@ const MONTHS_PT = ["Jan", "Fev", "Mar", "Abr", "Mai", "Jun", "Jul", "Ago", "Set"
 
 export const MonthlyFlowChart = () => {
   const [year, setYear] = useState(currentYear);
-  const [companyId, setCompanyId] = useState("all");
+  const [companyId, setCompanyId] = useState("3d37326f-bedc-4a16-b81f-0213c826d423");
   const { data, isLoading } = useMonthlyFlowReport(year, companyId);
 
   const chartData = (data || []).map((d, i) => ({ ...d, label: MONTHS_PT[i] || d.month }));
