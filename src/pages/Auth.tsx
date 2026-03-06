@@ -240,7 +240,7 @@ const Auth = () => {
 
   if (checkingFirstAccess) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-background via-background to-[hsl(210_80%_12%)] flex items-center justify-center">
+      <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="animate-pulse text-muted-foreground">Carregando...</div>
       </div>
     );
@@ -248,12 +248,12 @@ const Auth = () => {
 
   if (isForgotPassword) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-background via-background to-[hsl(210_80%_12%)] flex items-center justify-center p-4">
-        <Card className="w-full max-w-md border-0 bg-[hsl(210_80%_12%)] shadow-2xl shadow-black/40">
+      <div className="min-h-screen bg-background flex items-center justify-center p-4">
+        <Card className="w-full max-w-md border border-border bg-card shadow-xl">
           <CardHeader className="space-y-1">
             <div className="flex flex-col items-center gap-6 mb-4">
             <Logo size="lg" />
-              <CardTitle className="text-xl text-center font-normal">Recuperar Senha</CardTitle>
+              <CardTitle className="text-xl text-center font-normal text-foreground">Recuperar Senha</CardTitle>
             </div>
             <CardDescription className="text-center">
               Digite seu email para receber um link de recuperação
@@ -270,10 +270,10 @@ const Auth = () => {
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   required
-                  className="bg-[hsl(210_91%_9%)] border-white/10 focus:border-brand-cyan/50"
+                  className="bg-muted border-border focus:border-primary"
                 />
               </div>
-              <Button onClick={handleForgotPassword} className="w-full" disabled={loading}>
+              <Button onClick={handleForgotPassword} className="w-full bg-secondary hover:bg-secondary/90 text-secondary-foreground" disabled={loading}>
                 {loading ? "Enviando..." : "Enviar Link de Recuperação"}
               </Button>
             </div>
@@ -293,13 +293,13 @@ const Auth = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-background via-background to-[hsl(210_80%_12%)] flex items-center justify-center p-4">
-      <Card className="w-full max-w-md border-0 bg-[hsl(210_80%_12%)] shadow-2xl shadow-black/40">
+    <div className="min-h-screen bg-background flex items-center justify-center p-4">
+      <Card className="w-full max-w-md border border-border bg-card shadow-xl">
         <CardHeader className="space-y-1">
           <div className="flex flex-col items-center gap-6 mb-4">
             <Logo size="lg" />
             <div className="text-center">
-              <CardTitle className="text-xl font-normal tracking-wide">Central Financeira</CardTitle>
+              <CardTitle className="text-xl font-normal tracking-wide text-foreground">Central Financeira</CardTitle>
             </div>
           </div>
           
@@ -335,7 +335,7 @@ const Auth = () => {
                   value={nome}
                   onChange={(e) => setNome(e.target.value)}
                   required
-                  className="bg-[hsl(210_91%_9%)] border-white/10 focus:border-brand-cyan/50"
+                  className="bg-muted border-border focus:border-primary"
                 />
               </div>
             )}
@@ -348,7 +348,7 @@ const Auth = () => {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
-                className="bg-[hsl(210_91%_9%)] border-white/10 focus:border-brand-cyan/50"
+                className="bg-muted border-border focus:border-primary"
               />
             </div>
             <div className="space-y-2">
@@ -361,10 +361,10 @@ const Auth = () => {
                 onChange={(e) => setPassword(e.target.value)}
                 required
                 minLength={6}
-                className="bg-[hsl(210_91%_9%)] border-white/10 focus:border-brand-cyan/50"
+                className="bg-muted border-border focus:border-primary"
               />
             </div>
-            <Button type="submit" className="w-full" disabled={loading}>
+            <Button type="submit" className="w-full bg-secondary hover:bg-secondary/90 text-secondary-foreground" disabled={loading}>
               {loading ? "Processando..." : isLogin ? "Entrar" : isFirstAccess ? "Criar Administrador" : "Criar Conta"}
             </Button>
 
