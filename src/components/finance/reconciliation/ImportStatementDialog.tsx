@@ -5,7 +5,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { useBankAccounts } from "@/hooks/useBankAccounts";
-import { parseStatement } from "@/lib/bankStatementParser";
+import { parseStatement, parsePDFStatement } from "@/lib/bankStatementParser";
 import type { BankTransactionInsert } from "@/hooks/useBankTransactions";
 import { toast } from "sonner";
 
@@ -30,10 +30,15 @@ export const ImportStatementDialog = ({
     const file = e.target.files?.[0];
     if (!file || !accountId) return;
 
-    const text = await file.text();
-
     try {
-      const result = parseStatement(text, accountId, file.name);
+      let result;
+      if (file.name.toLowerCase().endsWith(".pdf")) {
+        const buffer = await file.arrayBuffer();
+        result = await parsePDFStatement(buffer, accountId);
+      } else {
+        const text = await file.text();
+        result = parseStatement(text, accountId, file.name);
+      }
 
       if (result.transactions.length === 0) {
         toast.error("Nenhuma transação encontrada no arquivo.");
@@ -85,11 +90,11 @@ export const ImportStatementDialog = ({
           </div>
 
           <div>
-            <label className="text-sm font-medium">Arquivo (OFX ou CSV)</label>
+            <label className="text-sm font-medium">Arquivo (OFX, CSV, PDF ou TXT)</label>
             <input
               ref={fileRef}
               type="file"
-              accept=".ofx,.ofc,.csv,.txt"
+              accept=".ofx,.ofc,.csv,.txt,.pdf"
               onChange={handleFile}
               disabled={!accountId}
               className="block w-full text-sm text-muted-foreground file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-primary file:text-primary-foreground hover:file:bg-primary/90 mt-1"
