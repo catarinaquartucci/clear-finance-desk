@@ -18,17 +18,21 @@ export const PayablesReport = () => {
   const total = (data || []).reduce((s, p: any) => s + Number(p.amount), 0);
 
   const handleExcel = () => {
-    exportToExcel((data || []).map((p: any) => ({
+    const rows = (data || []).map((p: any) => ({
       Descrição: p.description, Fornecedor: (p.suppliers as any)?.name || "-", Valor: Number(p.amount),
       Vencimento: p.due_date, Status: p.status, "Centro Custo": (p.cost_centers as any)?.name || "-",
       Filial: (p.group_companies as any)?.name || "-",
-    })), "contas-a-pagar");
+    }));
+    rows.push({ Descrição: "TOTAL", Fornecedor: "", Valor: total, Vencimento: "", Status: "", "Centro Custo": "", Filial: "" });
+    exportToExcel(rows, "contas-a-pagar");
   };
 
   const handlePDF = () => {
+    const rows = (data || []).map((p: any) => [p.description, (p.suppliers as any)?.name || "-", formatCurrency(Number(p.amount)), formatDate(p.due_date), p.status]);
+    rows.push(["TOTAL", "", formatCurrency(total), "", ""]);
     exportToPDF("Contas a Pagar",
       ["Descrição", "Fornecedor", "Valor", "Vencimento", "Status"],
-      (data || []).map((p: any) => [p.description, (p.suppliers as any)?.name || "-", formatCurrency(Number(p.amount)), formatDate(p.due_date), p.status])
+      rows
     );
   };
 

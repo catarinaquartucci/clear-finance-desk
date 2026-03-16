@@ -34,7 +34,13 @@ export const MonthlyFlowChart = () => {
               </SelectContent>
             </Select>
             <CompanyFilter value={companyId} onChange={setCompanyId} className="w-[160px]" />
-            <Button variant="outline" size="sm" onClick={() => exportToExcel(chartData.map(d => ({ Mês: d.label, Receitas: d.receitas, Despesas: d.despesas, Saldo: d.receitas - d.despesas })), `fluxo-mensal-${year}`)}>
+            <Button variant="outline" size="sm" onClick={() => {
+              const rows = chartData.map(d => ({ Mês: d.label, Receitas: d.receitas, Despesas: d.despesas, Saldo: d.receitas - d.despesas }));
+              const totalRec = rows.reduce((s, r) => s + r.Receitas, 0);
+              const totalDesp = rows.reduce((s, r) => s + r.Despesas, 0);
+              rows.push({ Mês: "TOTAL", Receitas: totalRec, Despesas: totalDesp, Saldo: totalRec - totalDesp });
+              exportToExcel(rows, `fluxo-mensal-${year}`);
+            }}>
               <FileSpreadsheet className="w-4 h-4 mr-1" /> Excel
             </Button>
           </div>

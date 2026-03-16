@@ -43,7 +43,7 @@ const ContasPagar = lazy(() => import("./pages/financeiro/ContasPagar"));
 const ContasReceber = lazy(() => import("./pages/financeiro/ContasReceber"));
 const Conciliacao = lazy(() => import("./pages/financeiro/Conciliacao"));
 const Relatorios = lazy(() => import("./pages/financeiro/Relatorios"));
-const EmissaoNF = lazy(() => import("./pages/financeiro/EmissaoNF"));
+
 const BoletosPage = lazy(() => import("./pages/financeiro/Boletos"));
 
 const queryClient = new QueryClient();
@@ -92,7 +92,7 @@ const App = () => (
                         <Route path="/financeiro/bonus" element={<FinanceGuard><Bonus /></FinanceGuard>} />
                         <Route path="/financeiro/distribuicao" element={<FinanceGuard><Distribuicao /></FinanceGuard>} />
                         <Route path="/financeiro/relatorios" element={<FinanceGuard><Relatorios /></FinanceGuard>} />
-                        <Route path="/financeiro/emissao-nf" element={<FinanceGuard><EmissaoNF /></FinanceGuard>} />
+                        
                         <Route path="/financeiro/boletos" element={<FinanceGuard><BoletosPage /></FinanceGuard>} />
 
                         {/* Admin routes */}

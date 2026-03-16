@@ -17,17 +17,21 @@ export const PaidReport = () => {
   const total = (data || []).reduce((s, p: any) => s + Number(p.amount), 0);
 
   const handleExcel = () => {
-    exportToExcel((data || []).map((p: any) => ({
+    const rows = (data || []).map((p: any) => ({
       Descrição: p.description, Fornecedor: (p.suppliers as any)?.name || "-", Valor: Number(p.amount),
       Vencimento: p.due_date, "Data Pagamento": p.paid_date || "-", "Forma Pgto": p.payment_method || "-",
       "Centro Custo": (p.cost_centers as any)?.name || "-", Filial: (p.group_companies as any)?.name || "-",
-    })), "contas-pagas");
+    }));
+    rows.push({ Descrição: "TOTAL", Fornecedor: "", Valor: total, Vencimento: "", "Data Pagamento": "", "Forma Pgto": "", "Centro Custo": "", Filial: "" });
+    exportToExcel(rows, "contas-pagas");
   };
 
   const handlePDF = () => {
+    const rows = (data || []).map((p: any) => [p.description, (p.suppliers as any)?.name || "-", formatCurrency(Number(p.amount)), formatDate(p.due_date), p.paid_date ? formatDate(p.paid_date) : "-", p.payment_method || "-"]);
+    rows.push(["TOTAL", "", formatCurrency(total), "", "", ""]);
     exportToPDF("Contas Pagas",
       ["Descrição", "Fornecedor", "Valor", "Vencimento", "Pago em", "Forma"],
-      (data || []).map((p: any) => [p.description, (p.suppliers as any)?.name || "-", formatCurrency(Number(p.amount)), formatDate(p.due_date), p.paid_date ? formatDate(p.paid_date) : "-", p.payment_method || "-"])
+      rows
     );
   };
 
