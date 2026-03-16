@@ -1,5 +1,4 @@
 import { Header } from "@/components/Layout/Header";
-import { Navigation } from "@/components/Layout/Navigation";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Button } from "@/components/ui/button";
@@ -85,7 +84,6 @@ const Regras = () => {
   return (
     <div className="min-h-screen bg-background">
       <Header />
-      <Navigation />
       
       <main className="container mx-auto px-4 py-8">
         <div className="mb-8">

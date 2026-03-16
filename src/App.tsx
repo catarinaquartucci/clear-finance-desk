@@ -11,8 +11,7 @@ import { AppPreferencesProvider } from "./contexts/AppPreferencesContext";
 import { ProtectedRoute } from "./components/Auth/ProtectedRoute";
 import { FinanceGuard } from "./components/guards/FinanceGuard";
 import { AdminGuard } from "./components/guards/AdminGuard";
-import { FinanceLayout } from "./components/finance/layout/FinanceLayout";
-import { AdminLayout } from "./components/admin/layout/AdminLayout";
+import { AppLayout } from "./components/Layout/AppLayout";
 import { BirthdayPopup } from "./components/Birthday/BirthdayPopup";
 import ErrorBoundary from "./components/ErrorBoundary";
 import Auth from "./pages/Auth";
@@ -69,65 +68,43 @@ const App = () => (
                 <BrowserRouter>
                   <Suspense fallback={<Loading />}>
                     <Routes>
-                  <Route path="/" element={<Navigate to="/dashboard" replace />} />
-                  <Route path="/dashboard" element={
-                    <ProtectedRoute>
-                      <Index />
-                    </ProtectedRoute>
-                  } />
-                  <Route path="/auth" element={<Auth />} />
-                  <Route path="/regras" element={<Regras />} />
-                  
-                  <Route path="/solicitacoes" element={
-                    <ProtectedRoute>
-                      <Solicitacoes />
-                    </ProtectedRoute>
-                  } />
-                  
-                  <Route path="/notas-fiscais" element={
-                    <ProtectedRoute>
-                      <NotasFiscais />
-                    </ProtectedRoute>
-                  } />
-                  
-                  {/* Admin Module Routes */}
-                  <Route path="/admin" element={
-                    <AdminGuard>
-                      <AdminLayout />
-                    </AdminGuard>
-                  }>
-                    <Route index element={<Navigate to="aprovacoes" replace />} />
-                    <Route path="aprovacoes" element={<AdminDashboard />} />
-                    <Route path="colaboradores" element={<AdminColaboradores />} />
-                    <Route path="equipamentos" element={<AdminEquipamentos />} />
-                    <Route path="automacoes" element={<AdminAutomacoes />} />
-                    <Route path="configuracoes" element={<AdminConfiguracoes />} />
-                  </Route>
+                      <Route path="/" element={<Navigate to="/dashboard" replace />} />
+                      <Route path="/auth" element={<Auth />} />
+                      <Route path="/regras" element={<Regras />} />
 
-                  {/* Finance Module Routes */}
-                  <Route path="/financeiro" element={
-                    <FinanceGuard>
-                      <FinanceLayout />
-                    </FinanceGuard>
-                  }>
-                    <Route index element={<Navigate to="cadastros" replace />} />
-                    <Route path="cadastros" element={<Cadastros />} />
-                    <Route path="contas-pagar" element={<ContasPagar />} />
-                    <Route path="contas-receber" element={<ContasReceber />} />
-                    <Route path="conciliacao" element={<Conciliacao />} />
-                    <Route path="planejamento" element={<Planejamento />} />
-                    <Route path="fluxo-caixa" element={<FluxoCaixa />} />
-                    <Route path="analise-financeira" element={<AnaliseFinanceira />} />
-                    <Route path="impostos" element={<Impostos />} />
-                    <Route path="metas-vendas" element={<MetasVendas />} />
-                    <Route path="bonus" element={<Bonus />} />
-                    <Route path="distribuicao" element={<Distribuicao />} />
-                    <Route path="relatorios" element={<Relatorios />} />
-                    <Route path="emissao-nf" element={<EmissaoNF />} />
-                    <Route path="boletos" element={<BoletosPage />} />
-                  </Route>
-                  
-                  <Route path="*" element={<NotFound />} />
+                      {/* All protected routes inside AppLayout */}
+                      <Route element={<ProtectedRoute><AppLayout /></ProtectedRoute>}>
+                        <Route path="/dashboard" element={<Index />} />
+                        <Route path="/solicitacoes" element={<Solicitacoes />} />
+                        <Route path="/notas-fiscais" element={<NotasFiscais />} />
+
+                        {/* Finance routes */}
+                        <Route path="/financeiro" element={<Navigate to="/financeiro/cadastros" replace />} />
+                        <Route path="/financeiro/cadastros" element={<FinanceGuard><Cadastros /></FinanceGuard>} />
+                        <Route path="/financeiro/contas-pagar" element={<FinanceGuard><ContasPagar /></FinanceGuard>} />
+                        <Route path="/financeiro/contas-receber" element={<FinanceGuard><ContasReceber /></FinanceGuard>} />
+                        <Route path="/financeiro/conciliacao" element={<FinanceGuard><Conciliacao /></FinanceGuard>} />
+                        <Route path="/financeiro/planejamento" element={<FinanceGuard><Planejamento /></FinanceGuard>} />
+                        <Route path="/financeiro/fluxo-caixa" element={<FinanceGuard><FluxoCaixa /></FinanceGuard>} />
+                        <Route path="/financeiro/analise-financeira" element={<FinanceGuard><AnaliseFinanceira /></FinanceGuard>} />
+                        <Route path="/financeiro/impostos" element={<FinanceGuard><Impostos /></FinanceGuard>} />
+                        <Route path="/financeiro/metas-vendas" element={<FinanceGuard><MetasVendas /></FinanceGuard>} />
+                        <Route path="/financeiro/bonus" element={<FinanceGuard><Bonus /></FinanceGuard>} />
+                        <Route path="/financeiro/distribuicao" element={<FinanceGuard><Distribuicao /></FinanceGuard>} />
+                        <Route path="/financeiro/relatorios" element={<FinanceGuard><Relatorios /></FinanceGuard>} />
+                        <Route path="/financeiro/emissao-nf" element={<FinanceGuard><EmissaoNF /></FinanceGuard>} />
+                        <Route path="/financeiro/boletos" element={<FinanceGuard><BoletosPage /></FinanceGuard>} />
+
+                        {/* Admin routes */}
+                        <Route path="/admin" element={<Navigate to="/admin/aprovacoes" replace />} />
+                        <Route path="/admin/aprovacoes" element={<AdminGuard><AdminDashboard /></AdminGuard>} />
+                        <Route path="/admin/colaboradores" element={<AdminGuard><AdminColaboradores /></AdminGuard>} />
+                        <Route path="/admin/equipamentos" element={<AdminGuard><AdminEquipamentos /></AdminGuard>} />
+                        <Route path="/admin/automacoes" element={<AdminGuard><AdminAutomacoes /></AdminGuard>} />
+                        <Route path="/admin/configuracoes" element={<AdminGuard><AdminConfiguracoes /></AdminGuard>} />
+                      </Route>
+
+                      <Route path="*" element={<NotFound />} />
                     </Routes>
                   </Suspense>
                 </BrowserRouter>
