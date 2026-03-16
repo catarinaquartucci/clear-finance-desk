@@ -169,7 +169,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
     // DEPOIS verificar sessão existente
     supabase.auth.getSession().then(({ data: { session }, error }) => {
-      console.log('📦 [AuthContext] Sessão existente:', { 
+      if (import.meta.env.DEV) console.log('📦 [AuthContext] Sessão existente:', { 
         hasSession: !!session,
         userId: session?.user?.id,
         email: session?.user?.email,
