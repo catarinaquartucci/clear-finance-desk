@@ -160,7 +160,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
             checkUserRoles(session.user.id);
           }, 0);
         } else {
-          console.log('👤 [AuthContext] Usuário deslogado, resetando estados');
+          if (import.meta.env.DEV) console.log('👤 [AuthContext] Usuário deslogado, resetando estados');
           resetRoles();
           setLoading(false);
         }
