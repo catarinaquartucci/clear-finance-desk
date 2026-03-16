@@ -1,9 +1,11 @@
+import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useFinanceDashboard } from "@/hooks/useFinanceDashboard";
 import { ExpenseBreakdownPie } from "@/components/finance/analysis/ExpenseBreakdownPie";
+import { DashboardDetailDialog, type DetailType } from "@/components/Dashboard/DashboardDetailDialog";
 import { Wallet, TrendingUp, TrendingDown, Target, AlertTriangle, ExternalLink } from "lucide-react";
 import { Link } from "react-router-dom";
 import { format, parseISO } from "date-fns";
@@ -22,12 +24,12 @@ const formatCurrencyCompact = (v: number) =>
 
 const Index = () => {
   const { data, isLoading } = useFinanceDashboard();
+  const [openDetail, setOpenDetail] = useState<DetailType | null>(null);
 
   const mesAtual = format(new Date(), "MMMM 'de' yyyy", { locale: ptBR });
 
   return (
     <div className="container mx-auto px-4 py-8 space-y-8">
-      {/* Compact header */}
       <div>
         <h1 className="text-2xl font-bold text-foreground">Painel Financeiro</h1>
         <p className="text-sm text-muted-foreground capitalize">{mesAtual}</p>
@@ -35,28 +37,29 @@ const Index = () => {
 
       {/* KPI Cards */}
       <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <KPICard icon={Wallet} label="Saldo Atual" value={data?.saldoAtual} isLoading={isLoading} colorClass="text-primary" />
-        <KPICard icon={TrendingUp} label="Entradas do Mês" value={data?.entradasMes} isLoading={isLoading} colorClass="text-neon-green" />
-        <KPICard icon={TrendingDown} label="Saídas do Mês" value={data?.saidasMes} isLoading={isLoading} colorClass="text-destructive" />
+        <KPICard icon={Wallet} label="Saldo Atual" value={data?.saldoAtual} isLoading={isLoading} colorClass="text-primary" onClick={() => setOpenDetail("saldo")} />
+        <KPICard icon={TrendingUp} label="Entradas do Mês" value={data?.entradasMes} isLoading={isLoading} colorClass="text-neon-green" onClick={() => setOpenDetail("entradas")} />
+        <KPICard icon={TrendingDown} label="Saídas do Mês" value={data?.saidasMes} isLoading={isLoading} colorClass="text-destructive" onClick={() => setOpenDetail("saidas")} />
         <KPICard
           icon={Target}
           label="Projeção 30 dias"
           value={data?.projecaoCaixa}
           isLoading={isLoading}
           colorClass={(data?.projecaoCaixa ?? 0) >= 0 ? "text-neon-green" : "text-destructive"}
+          onClick={() => setOpenDetail("projecao")}
         />
       </section>
 
       {/* Middle: Alerts + Pie */}
       <section className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Payable Alerts */}
-        <Card>
+        <Card className="cursor-pointer transition-shadow hover:shadow-lg" onClick={() => setOpenDetail("payables")}>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-base flex items-center gap-2">
               <AlertTriangle className="h-4 w-4 text-orange" />
               Contas a Pagar — Atenção
             </CardTitle>
-            <Button variant="ghost" size="sm" asChild>
+            <Button variant="ghost" size="sm" asChild onClick={(e) => e.stopPropagation()}>
               <Link to="/financeiro/contas-pagar" className="flex items-center gap-1 text-xs">
                 Ver todas <ExternalLink className="h-3 w-3" />
               </Link>
@@ -84,7 +87,7 @@ const Index = () => {
                       </tr>
                     </thead>
                     <tbody>
-                      {data.payableAlerts.map(p => (
+                      {data.payableAlerts.slice(0, 5).map(p => (
                         <tr key={p.id} className="border-b border-border/50 last:border-0">
                           <td className="py-2 pr-2 max-w-[180px] truncate" title={p.description}>
                             {p.supplier_name || p.description}
@@ -122,11 +125,26 @@ const Index = () => {
         </Card>
 
         {/* Expense Composition */}
-        <ExpenseBreakdownPie
-          data={data?.expenseComposition || []}
-          title={`Despesas por Tipo — ${format(new Date(), "MMM/yyyy", { locale: ptBR })}`}
-        />
+        <div className="cursor-pointer transition-shadow hover:shadow-lg rounded-lg" onClick={() => setOpenDetail("despesas")}>
+          <ExpenseBreakdownPie
+            data={data?.expenseComposition || []}
+            title={`Despesas por Tipo — ${format(new Date(), "MMM/yyyy", { locale: ptBR })}`}
+          />
+        </div>
       </section>
+
+      <DashboardDetailDialog
+        type={openDetail}
+        onClose={() => setOpenDetail(null)}
+        bankAccounts={data?.bankAccountsDetail}
+        entradas={data?.entradasDetail}
+        saidas={data?.saidasDetail}
+        projecao={data?.projecaoDetail}
+        payables={data?.payableAlerts}
+        expenses={data?.expenseComposition}
+        totalVencido={data?.totalVencido}
+        totalAVencer={data?.totalAVencer}
+      />
     </div>
   );
 };
@@ -137,10 +155,11 @@ interface KPICardProps {
   value?: number;
   isLoading: boolean;
   colorClass: string;
+  onClick?: () => void;
 }
 
-const KPICard = ({ icon: Icon, label, value, isLoading, colorClass }: KPICardProps) => (
-  <Card className="p-6">
+const KPICard = ({ icon: Icon, label, value, isLoading, colorClass, onClick }: KPICardProps) => (
+  <Card className="p-6 cursor-pointer transition-shadow hover:shadow-lg" onClick={onClick}>
     <div className="flex items-center gap-3 mb-3">
       <div className="p-2 rounded-lg bg-muted">
         <Icon className="h-5 w-5 text-muted-foreground" />
