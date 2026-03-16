@@ -19,6 +19,25 @@ export interface ExpenseCategory {
   fill: string;
 }
 
+export interface BankAccountDetail {
+  name: string;
+  bank_name: string;
+  current_balance: number;
+}
+
+export interface TransactionDetail {
+  description: string;
+  amount: number;
+  date: string;
+}
+
+export interface ProjecaoDetail {
+  saldoAtual: number;
+  receitaPrevista: number;
+  despesaPrevista: number;
+  projecaoCaixa: number;
+}
+
 const EXPENSE_COLORS = [
   "#0ea5e9", "#f97316", "#8b5cf6", "#10b981", "#ef4444",
   "#ec4899", "#f59e0b", "#6366f1", "#14b8a6", "#e11d48",
@@ -36,15 +55,21 @@ export const useFinanceDashboard = () => {
   return useQuery({
     queryKey: ["finance-dashboard", monthStart],
     queryFn: async () => {
-      // 1. Bank accounts balance
+      // 1. Bank accounts balance + detail
       const { data: accounts } = await supabase
         .from("bank_accounts")
-        .select("current_balance")
+        .select("name, bank_name, current_balance")
         .eq("company_id", VANTARI_ID)
         .eq("active", true);
 
-      const saldoAtual = (accounts || []).reduce(
-        (sum, a) => sum + Number(a.current_balance || 0), 0
+      const bankAccountsDetail: BankAccountDetail[] = (accounts || []).map(a => ({
+        name: a.name,
+        bank_name: a.bank_name,
+        current_balance: Number(a.current_balance || 0),
+      }));
+
+      const saldoAtual = bankAccountsDetail.reduce(
+        (sum, a) => sum + a.current_balance, 0
       );
 
       // 2. Get Vantari account IDs for transactions
@@ -57,11 +82,13 @@ export const useFinanceDashboard = () => {
 
       let entradasMes = 0;
       let saidasMes = 0;
+      let entradasDetail: TransactionDetail[] = [];
+      let saidasDetail: TransactionDetail[] = [];
 
       if (ids.length > 0) {
         const { data: txns } = await supabase
           .from("bank_transactions")
-          .select("amount, type, description")
+          .select("amount, type, description, date")
           .in("bank_account_id", ids)
           .gte("date", monthStart)
           .lte("date", monthEnd);
@@ -69,10 +96,21 @@ export const useFinanceDashboard = () => {
         (txns || []).forEach(t => {
           const desc = (t.description || "").toUpperCase();
           if (desc.includes("SALDO") || desc.includes("RENDIMENTO")) return;
-          if (t.type === "credit") entradasMes += Number(t.amount || 0);
-          else saidasMes += Math.abs(Number(t.amount || 0));
+          if (t.type === "credit") {
+            const amt = Number(t.amount || 0);
+            entradasMes += amt;
+            entradasDetail.push({ description: t.description, amount: amt, date: t.date });
+          } else {
+            const amt = Math.abs(Number(t.amount || 0));
+            saidasMes += amt;
+            saidasDetail.push({ description: t.description, amount: amt, date: t.date });
+          }
         });
       }
+
+      // Sort by date desc
+      entradasDetail.sort((a, b) => b.date.localeCompare(a.date));
+      saidasDetail.sort((a, b) => b.date.localeCompare(a.date));
 
       // 3. Payable alerts: overdue + due in 7 days
       const { data: alertPayables } = await supabase
@@ -144,6 +182,13 @@ export const useFinanceDashboard = () => {
       );
       const projecaoCaixa = saldoAtual + receitaPrevista - despesaPrevista;
 
+      const projecaoDetail: ProjecaoDetail = {
+        saldoAtual,
+        receitaPrevista,
+        despesaPrevista,
+        projecaoCaixa,
+      };
+
       return {
         saldoAtual,
         entradasMes,
@@ -153,6 +198,10 @@ export const useFinanceDashboard = () => {
         totalVencido,
         totalAVencer,
         expenseComposition,
+        bankAccountsDetail,
+        entradasDetail,
+        saidasDetail,
+        projecaoDetail,
       };
     },
     refetchInterval: 5 * 60 * 1000, // 5 min
