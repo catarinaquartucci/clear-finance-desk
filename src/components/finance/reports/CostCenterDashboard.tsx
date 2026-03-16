@@ -39,9 +39,17 @@ export const CostCenterDashboard = () => {
   };
 
   const handlePDF = () => {
-    const rows = items.map(d => [d.code, d.name, formatCurrency(d.total), formatCurrency(d.paid), formatCurrency(d.open), String(d.count)]);
-    rows.push(["", "TOTAL", formatCurrency(grandTotal), formatCurrency(totalPaid), formatCurrency(totalOpen), String(totalCount)]);
-    exportToPDF("Gastos por Centro de Custo", ["Código", "Centro de Custo", "Total", "Pago", "Em Aberto", "Qtd"], rows);
+    const pdfRows = items.map(d => [d.code, d.name, formatCurrency(d.total), formatCurrency(d.paid), formatCurrency(d.open), String(d.count)]);
+    pdfRows.push(["", "TOTAL", formatCurrency(grandTotal), formatCurrency(totalPaid), formatCurrency(totalOpen), String(totalCount)]);
+    exportToPDF("Gastos por Centro de Custo", ["Código", "Centro de Custo", "Total", "Pago", "Em Aberto", "Qtd"], pdfRows, {
+      highlightLastRow: true,
+      summaryCards: [
+        { label: "Total Geral", value: formatCurrency(grandTotal) },
+        { label: "Total Pago", value: formatCurrency(totalPaid) },
+        { label: "Em Aberto", value: formatCurrency(totalOpen) },
+        { label: "Quantidade", value: String(totalCount) },
+      ],
+    });
   };
 
   return (

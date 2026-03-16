@@ -40,9 +40,17 @@ export const PayablesReport = () => {
   };
 
   const handlePDF = () => {
-    const rows = items.map((p: any) => [p.description, (p.suppliers as any)?.name || "-", formatCurrency(Number(p.amount)), formatDate(p.due_date), p.status]);
-    rows.push(["TOTAL", "", formatCurrency(total), "", ""]);
-    exportToPDF("Contas a Pagar", ["Descrição", "Fornecedor", "Valor", "Vencimento", "Status"], rows);
+    const pdfRows = items.map((p: any) => [p.description, (p.suppliers as any)?.name || "-", formatCurrency(Number(p.amount)), formatDate(p.due_date), statusMap[p.status]?.label || p.status]);
+    pdfRows.push(["TOTAL", "", formatCurrency(total), "", ""]);
+    exportToPDF("Contas a Pagar", ["Descrição", "Fornecedor", "Valor", "Vencimento", "Status"], pdfRows, {
+      highlightLastRow: true,
+      summaryCards: [
+        { label: "Total", value: formatCurrency(total) },
+        { label: "Quantidade", value: String(items.length) },
+        { label: "Maior Valor", value: formatCurrency(maxVal) },
+        { label: "Valor Médio", value: formatCurrency(avgVal) },
+      ],
+    });
   };
 
   const summaryCards = [
