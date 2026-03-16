@@ -31,7 +31,44 @@ Deno.serve(async (req) => {
   try {
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-    
+
+    // Verify authentication
+    const authHeader = req.headers.get('Authorization');
+    if (!authHeader) {
+      return new Response(JSON.stringify({ error: 'Unauthorized' }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        status: 401,
+      });
+    }
+
+    const anonClient = createClient(supabaseUrl, Deno.env.get('SUPABASE_ANON_KEY')!, {
+      auth: { autoRefreshToken: false, persistSession: false },
+      global: { headers: { Authorization: authHeader } },
+    });
+
+    const { data: { user }, error: authError } = await anonClient.auth.getUser();
+    if (authError || !user) {
+      return new Response(JSON.stringify({ error: 'Unauthorized' }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        status: 401,
+      });
+    }
+
+    // Verify admin role
+    const { data: roleData } = await anonClient
+      .from('user_roles')
+      .select('role')
+      .eq('user_id', user.id)
+      .eq('role', 'admin')
+      .maybeSingle();
+
+    if (!roleData) {
+      return new Response(JSON.stringify({ error: 'Forbidden' }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        status: 403,
+      });
+    }
+
     const supabase = createClient(supabaseUrl, supabaseServiceKey, {
       auth: {
         autoRefreshToken: false,
@@ -75,7 +112,7 @@ Deno.serve(async (req) => {
         const { error: insertError } = await supabase
           .from('colaboradores')
           .insert({
-            user_id: null, // Será preenchido quando o colaborador se cadastrar
+            user_id: null,
             nome: colab.nome,
             email: colab.email,
             cpf: colab.cpf,
@@ -89,9 +126,7 @@ Deno.serve(async (req) => {
             variavel: colab.variavel || null,
             regra_ote: colab.regra_ote || null,
             data_nascimento: colab.data_nascimento || null,
-            is_admin: colab.is_admin || false, // Apenas marca, NÃO atribui role automaticamente
-            // Se data_fim_contrato está preenchida, marca como inativo
-            // Caso contrário, usa o valor enviado ou true como padrão
+            is_admin: colab.is_admin || false,
             ativo: colab.data_fim_contrato ? false : (colab.ativo ?? true),
           });
 
