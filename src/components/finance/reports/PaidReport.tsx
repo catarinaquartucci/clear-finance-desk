@@ -1,9 +1,13 @@
 import { useState } from "react";
 import { ReportFilters } from "./ReportFilters";
 import { usePaidReport } from "@/hooks/useReportQueries";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Table, TableBody, TableCell, TableFooter, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 import { exportToExcel, exportToPDF, formatCurrency, formatDate } from "@/lib/exportUtils";
 import { format } from "date-fns";
+import { Skeleton } from "@/components/ui/skeleton";
+import { DollarSign, Hash, TrendingUp, ArrowUpRight, FileX } from "lucide-react";
 
 export const PaidReport = () => {
   const [dateFrom, setDateFrom] = useState<Date>();
@@ -14,10 +18,13 @@ export const PaidReport = () => {
   const dt = dateTo ? format(dateTo, "yyyy-MM-dd") : undefined;
   const { data, isLoading } = usePaidReport(df, dt, companyId);
 
-  const total = (data || []).reduce((s, p: any) => s + Number(p.amount), 0);
+  const items = data || [];
+  const total = items.reduce((s, p: any) => s + Number(p.amount), 0);
+  const maxVal = items.length ? Math.max(...items.map((p: any) => Number(p.amount))) : 0;
+  const avgVal = items.length ? total / items.length : 0;
 
   const handleExcel = () => {
-    const rows = (data || []).map((p: any) => ({
+    const rows = items.map((p: any) => ({
       Descrição: p.description, Fornecedor: (p.suppliers as any)?.name || "-", Valor: Number(p.amount),
       Vencimento: p.due_date, "Data Pagamento": p.paid_date || "-", "Forma Pgto": p.payment_method || "-",
       "Centro Custo": (p.cost_centers as any)?.name || "-", Filial: (p.group_companies as any)?.name || "-",
@@ -27,13 +34,17 @@ export const PaidReport = () => {
   };
 
   const handlePDF = () => {
-    const rows = (data || []).map((p: any) => [p.description, (p.suppliers as any)?.name || "-", formatCurrency(Number(p.amount)), formatDate(p.due_date), p.paid_date ? formatDate(p.paid_date) : "-", p.payment_method || "-"]);
+    const rows = items.map((p: any) => [p.description, (p.suppliers as any)?.name || "-", formatCurrency(Number(p.amount)), formatDate(p.due_date), p.paid_date ? formatDate(p.paid_date) : "-", p.payment_method || "-"]);
     rows.push(["TOTAL", "", formatCurrency(total), "", "", ""]);
-    exportToPDF("Contas Pagas",
-      ["Descrição", "Fornecedor", "Valor", "Vencimento", "Pago em", "Forma"],
-      rows
-    );
+    exportToPDF("Contas Pagas", ["Descrição", "Fornecedor", "Valor", "Vencimento", "Pago em", "Forma"], rows);
   };
+
+  const summaryCards = [
+    { label: "Total Pago", value: formatCurrency(total), icon: DollarSign, color: "text-primary" },
+    { label: "Quantidade", value: String(items.length), icon: Hash, color: "text-muted-foreground" },
+    { label: "Maior Valor", value: formatCurrency(maxVal), icon: ArrowUpRight, color: "text-destructive" },
+    { label: "Valor Médio", value: formatCurrency(avgVal), icon: TrendingUp, color: "text-muted-foreground" },
+  ];
 
   return (
     <div>
@@ -41,31 +52,81 @@ export const PaidReport = () => {
         onDateFromChange={setDateFrom} onDateToChange={setDateTo} onCompanyChange={setCompanyId}
         onExportExcel={handleExcel} onExportPDF={handlePDF} />
 
-      {isLoading ? <p className="text-muted-foreground py-8 text-center">Carregando...</p> : (
-        <>
-          <div className="text-sm text-muted-foreground mb-2">{(data || []).length} registros · Total pago: {formatCurrency(total)}</div>
-          <div className="border border-subtle rounded-lg overflow-hidden">
-            <Table>
-              <TableHeader>
-                <TableRow><TableHead>Descrição</TableHead><TableHead>Fornecedor</TableHead><TableHead>Centro Custo</TableHead><TableHead>Filial</TableHead><TableHead className="text-right">Valor</TableHead><TableHead>Vencimento</TableHead><TableHead>Pago em</TableHead><TableHead>Forma</TableHead></TableRow>
-              </TableHeader>
-              <TableBody>
-                {(data || []).map((p: any) => (
-                  <TableRow key={p.id}>
-                    <TableCell className="font-medium">{p.description}</TableCell>
-                    <TableCell>{(p.suppliers as any)?.name || "-"}</TableCell>
-                    <TableCell>{(p.cost_centers as any)?.name || "-"}</TableCell>
-                    <TableCell>{(p.group_companies as any)?.name || "-"}</TableCell>
-                    <TableCell className="text-right">{formatCurrency(Number(p.amount))}</TableCell>
-                    <TableCell>{formatDate(p.due_date)}</TableCell>
-                    <TableCell>{p.paid_date ? formatDate(p.paid_date) : "-"}</TableCell>
-                    <TableCell>{p.payment_method || "-"}</TableCell>
-                  </TableRow>
-                ))}
-                {(data || []).length === 0 && <TableRow><TableCell colSpan={8} className="text-center py-8 text-muted-foreground">Nenhum registro encontrado</TableCell></TableRow>}
-              </TableBody>
-            </Table>
+      {isLoading ? (
+        <div className="space-y-4">
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+            {Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} className="h-20 rounded-xl" />)}
           </div>
+          <Skeleton className="h-64 rounded-xl" />
+        </div>
+      ) : (
+        <>
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-4">
+            {summaryCards.map((c, i) => (
+              <Card key={c.label} className="bg-card animate-in fade-in slide-in-from-bottom-2" style={{ animationDelay: `${i * 60}ms`, animationFillMode: "backwards" }}>
+                <CardContent className="p-4 flex items-center gap-3">
+                  <div className="p-2 rounded-lg bg-muted/60">
+                    <c.icon className={`w-4 h-4 ${c.color}`} />
+                  </div>
+                  <div>
+                    <p className="text-xs text-muted-foreground">{c.label}</p>
+                    <p className="text-lg font-bold text-foreground">{c.value}</p>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+
+          <Card className="bg-card">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-base flex items-center gap-2">
+                Detalhamento
+                <Badge variant="outline" className="font-normal">{items.length} registros</Badge>
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="p-0">
+              <div className="overflow-hidden rounded-b-xl">
+                <Table>
+                  <TableHeader>
+                    <TableRow><TableHead>Descrição</TableHead><TableHead>Fornecedor</TableHead><TableHead>Centro Custo</TableHead><TableHead>Filial</TableHead><TableHead className="text-right">Valor</TableHead><TableHead>Vencimento</TableHead><TableHead>Pago em</TableHead><TableHead>Forma</TableHead></TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {items.map((p: any) => (
+                      <TableRow key={p.id} className="hover:bg-muted/40 transition-colors">
+                        <TableCell className="font-medium">{p.description}</TableCell>
+                        <TableCell>{(p.suppliers as any)?.name || "-"}</TableCell>
+                        <TableCell>{(p.cost_centers as any)?.name || "-"}</TableCell>
+                        <TableCell>{(p.group_companies as any)?.name || "-"}</TableCell>
+                        <TableCell className="text-right font-medium">{formatCurrency(Number(p.amount))}</TableCell>
+                        <TableCell>{formatDate(p.due_date)}</TableCell>
+                        <TableCell>{p.paid_date ? formatDate(p.paid_date) : "-"}</TableCell>
+                        <TableCell>{p.payment_method || "-"}</TableCell>
+                      </TableRow>
+                    ))}
+                    {items.length === 0 && (
+                      <TableRow>
+                        <TableCell colSpan={8} className="text-center py-12">
+                          <div className="flex flex-col items-center gap-2 text-muted-foreground">
+                            <FileX className="w-10 h-10" />
+                            <p className="text-sm">Nenhum registro encontrado</p>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    )}
+                  </TableBody>
+                  {items.length > 0 && (
+                    <TableFooter>
+                      <TableRow className="bg-muted/50 font-bold">
+                        <TableCell colSpan={4}>TOTAL</TableCell>
+                        <TableCell className="text-right">{formatCurrency(total)}</TableCell>
+                        <TableCell colSpan={3} />
+                      </TableRow>
+                    </TableFooter>
+                  )}
+                </Table>
+              </div>
+            </CardContent>
+          </Card>
         </>
       )}
     </div>
