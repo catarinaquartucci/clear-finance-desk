@@ -111,7 +111,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       setCanEditFinance(editFinance);
       setCanEditAdmin(editAdmin);
     } catch (error: any) {
-      console.error('❌ [AuthContext] Exceção ao verificar roles:', {
+      if (import.meta.env.DEV) console.error('❌ [AuthContext] Exceção ao verificar roles:', {
         message: error?.message,
         stack: error?.stack
       });
