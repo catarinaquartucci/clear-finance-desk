@@ -30,7 +30,15 @@ export const ExecutiveSummary = () => {
         ["Taxa Inadimplência", `${data.taxaInadimplencia.toFixed(1)}%`],
         ["Ticket Médio (Pagar)", formatCurrency(data.ticketMedioPagar)],
         ["Ticket Médio (Receber)", formatCurrency(data.ticketMedioReceber)],
-      ]
+      ],
+      {
+        summaryCards: [
+          { label: "A Pagar", value: formatCurrency(data.totalPagar) },
+          { label: "A Receber", value: formatCurrency(data.totalReceber) },
+          { label: "Saldo", value: formatCurrency(data.saldoLiquido) },
+          { label: "Inadimplência", value: `${data.taxaInadimplencia.toFixed(1)}%` },
+        ],
+      }
     );
   };
 

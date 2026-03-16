@@ -39,9 +39,17 @@ export const ReceivablesReport = () => {
   };
 
   const handlePDF = () => {
-    const rows = items.map((r: any) => [r.description, (r.customers as any)?.name || "-", formatCurrency(Number(r.amount)), formatDate(r.due_date), r.status]);
-    rows.push(["TOTAL", "", formatCurrency(total), "", ""]);
-    exportToPDF("Contas a Receber", ["Descrição", "Cliente", "Valor", "Vencimento", "Status"], rows);
+    const pdfRows = items.map((r: any) => [r.description, (r.customers as any)?.name || "-", formatCurrency(Number(r.amount)), formatDate(r.due_date), statusMap[r.status]?.label || r.status]);
+    pdfRows.push(["TOTAL", "", formatCurrency(total), "", ""]);
+    exportToPDF("Contas a Receber", ["Descrição", "Cliente", "Valor", "Vencimento", "Status"], pdfRows, {
+      highlightLastRow: true,
+      summaryCards: [
+        { label: "Total", value: formatCurrency(total) },
+        { label: "Quantidade", value: String(items.length) },
+        { label: "Maior Valor", value: formatCurrency(maxVal) },
+        { label: "Valor Médio", value: formatCurrency(avgVal) },
+      ],
+    });
   };
 
   const summaryCards = [

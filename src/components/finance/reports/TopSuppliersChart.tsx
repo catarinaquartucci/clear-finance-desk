@@ -20,8 +20,15 @@ export const TopSuppliersChart = () => {
   };
 
   const handlePDF = () => {
+    const items = data || [];
+    const total = items.reduce((s, d) => s + d.total, 0);
     exportToPDF("Top Fornecedores", ["Fornecedor", "Total Pago", "Qtd"],
-      (data || []).map(d => [d.name, formatCurrency(d.total), String(d.count)]));
+      items.map(d => [d.name, formatCurrency(d.total), String(d.count)]), {
+        summaryCards: [
+          { label: "Total Geral", value: formatCurrency(total) },
+          { label: "Fornecedores", value: String(items.length) },
+        ],
+      });
   };
 
   return (

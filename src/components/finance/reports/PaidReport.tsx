@@ -34,9 +34,17 @@ export const PaidReport = () => {
   };
 
   const handlePDF = () => {
-    const rows = items.map((p: any) => [p.description, (p.suppliers as any)?.name || "-", formatCurrency(Number(p.amount)), formatDate(p.due_date), p.paid_date ? formatDate(p.paid_date) : "-", p.payment_method || "-"]);
-    rows.push(["TOTAL", "", formatCurrency(total), "", "", ""]);
-    exportToPDF("Contas Pagas", ["Descrição", "Fornecedor", "Valor", "Vencimento", "Pago em", "Forma"], rows);
+    const pdfRows = items.map((p: any) => [p.description, (p.suppliers as any)?.name || "-", formatCurrency(Number(p.amount)), formatDate(p.due_date), p.paid_date ? formatDate(p.paid_date) : "-", p.payment_method || "-"]);
+    pdfRows.push(["TOTAL", "", formatCurrency(total), "", "", ""]);
+    exportToPDF("Contas Pagas", ["Descrição", "Fornecedor", "Valor", "Vencimento", "Pago em", "Forma"], pdfRows, {
+      highlightLastRow: true,
+      summaryCards: [
+        { label: "Total Pago", value: formatCurrency(total) },
+        { label: "Quantidade", value: String(items.length) },
+        { label: "Maior Valor", value: formatCurrency(maxVal) },
+        { label: "Valor Médio", value: formatCurrency(avgVal) },
+      ],
+    });
   };
 
   const summaryCards = [
