@@ -93,7 +93,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       const editFinance = financeStatus || adminStatus;
       const editAdmin = adminStatus;
       
-      console.log('✅ [AuthContext] Status calculado:', { 
+      if (import.meta.env.DEV) console.log('✅ [AuthContext] Status calculado:', { 
         userId,
         roles,
         isAdmin: adminStatus, 
