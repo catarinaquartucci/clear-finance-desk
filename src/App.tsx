@@ -69,7 +69,12 @@ const App = () => (
                 <BrowserRouter>
                   <Suspense fallback={<Loading />}>
                     <Routes>
-                  <Route path="/" element={<Regras />} />
+                  <Route path="/" element={<Navigate to="/dashboard" replace />} />
+                  <Route path="/dashboard" element={
+                    <ProtectedRoute>
+                      <Index />
+                    </ProtectedRoute>
+                  } />
                   <Route path="/auth" element={<Auth />} />
                   <Route path="/regras" element={<Regras />} />
                   
