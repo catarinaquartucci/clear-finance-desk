@@ -23,16 +23,24 @@ export const CostCenterDashboard = () => {
 
   const grandTotal = (data || []).reduce((s, d) => s + d.total, 0);
 
+  const totalPaid = (data || []).reduce((s, d) => s + d.paid, 0);
+  const totalOpen = (data || []).reduce((s, d) => s + d.open, 0);
+  const totalCount = (data || []).reduce((s, d) => s + d.count, 0);
+
   const handleExcel = () => {
-    exportToExcel((data || []).map(d => ({
+    const rows = (data || []).map(d => ({
       Código: d.code, "Centro de Custo": d.name, Total: d.total, Pago: d.paid, "Em Aberto": d.open, Qtd: d.count,
-    })), "gastos-centro-custo");
+    }));
+    rows.push({ Código: "", "Centro de Custo": "TOTAL", Total: grandTotal, Pago: totalPaid, "Em Aberto": totalOpen, Qtd: totalCount });
+    exportToExcel(rows, "gastos-centro-custo");
   };
 
   const handlePDF = () => {
+    const rows = (data || []).map(d => [d.code, d.name, formatCurrency(d.total), formatCurrency(d.paid), formatCurrency(d.open), String(d.count)]);
+    rows.push(["", "TOTAL", formatCurrency(grandTotal), formatCurrency(totalPaid), formatCurrency(totalOpen), String(totalCount)]);
     exportToPDF("Gastos por Centro de Custo",
       ["Código", "Centro de Custo", "Total", "Pago", "Em Aberto", "Qtd"],
-      (data || []).map(d => [d.code, d.name, formatCurrency(d.total), formatCurrency(d.paid), formatCurrency(d.open), String(d.count)])
+      rows
     );
   };
 

@@ -18,16 +18,20 @@ export const ReceivablesReport = () => {
   const total = (data || []).reduce((s, r: any) => s + Number(r.amount), 0);
 
   const handleExcel = () => {
-    exportToExcel((data || []).map((r: any) => ({
+    const rows = (data || []).map((r: any) => ({
       Descrição: r.description, Cliente: (r.customers as any)?.name || "-", Valor: Number(r.amount),
       Vencimento: r.due_date, Status: r.status, Filial: (r.group_companies as any)?.name || "-",
-    })), "contas-a-receber");
+    }));
+    rows.push({ Descrição: "TOTAL", Cliente: "", Valor: total, Vencimento: "", Status: "", Filial: "" });
+    exportToExcel(rows, "contas-a-receber");
   };
 
   const handlePDF = () => {
+    const rows = (data || []).map((r: any) => [r.description, (r.customers as any)?.name || "-", formatCurrency(Number(r.amount)), formatDate(r.due_date), r.status]);
+    rows.push(["TOTAL", "", formatCurrency(total), "", ""]);
     exportToPDF("Contas a Receber",
       ["Descrição", "Cliente", "Valor", "Vencimento", "Status"],
-      (data || []).map((r: any) => [r.description, (r.customers as any)?.name || "-", formatCurrency(Number(r.amount)), formatDate(r.due_date), r.status])
+      rows
     );
   };
 

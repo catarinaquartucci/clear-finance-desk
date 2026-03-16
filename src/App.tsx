@@ -92,7 +92,7 @@ const App = () => (
                         <Route path="/financeiro/bonus" element={<FinanceGuard><Bonus /></FinanceGuard>} />
                         <Route path="/financeiro/distribuicao" element={<FinanceGuard><Distribuicao /></FinanceGuard>} />
                         <Route path="/financeiro/relatorios" element={<FinanceGuard><Relatorios /></FinanceGuard>} />
-                        <Route path="/financeiro/emissao-nf" element={<FinanceGuard><EmissaoNF /></FinanceGuard>} />
+                        
                         <Route path="/financeiro/boletos" element={<FinanceGuard><BoletosPage /></FinanceGuard>} />
 
                         {/* Admin routes */}

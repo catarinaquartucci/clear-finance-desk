@@ -42,9 +42,6 @@ const Relatorios = () => {
         <TabsContent value="paid" className="mt-4"><PaidReport /></TabsContent>
         <TabsContent value="costcenter" className="mt-4"><CostCenterDashboard /></TabsContent>
         <TabsContent value="monthly" className="mt-4"><MonthlyFlowChart /></TabsContent>
-        <TabsContent value="suppliers" className="mt-4"><TopSuppliersChart /></TabsContent>
-        <TabsContent value="dre" className="mt-4"><DREReport /></TabsContent>
-        <TabsContent value="aging" className="mt-4"><AgingReport /></TabsContent>
       </Tabs>
     </div>
   );

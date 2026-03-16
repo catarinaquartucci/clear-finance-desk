@@ -44,7 +44,6 @@ const operacionalItems = [
   { icon: HandCoins, label: "Contas a Receber", path: "/financeiro/contas-receber" },
   { icon: Scale, label: "Conciliação", path: "/financeiro/conciliacao" },
   { icon: Barcode, label: "Boletos", path: "/financeiro/boletos" },
-  { icon: FileText, label: "NFS-e", path: "/financeiro/emissao-nf" },
 ];
 
 const planejamentoItems = [
