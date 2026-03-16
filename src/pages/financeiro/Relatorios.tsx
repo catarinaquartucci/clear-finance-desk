@@ -1,4 +1,4 @@
-import { FileBarChart } from "lucide-react";
+import { FileBarChart, LayoutDashboard, ArrowDownCircle, ArrowUpCircle, CheckCircle2, PieChart, BarChart3 } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { PayablesReport } from "@/components/finance/reports/PayablesReport";
 import { ReceivablesReport } from "@/components/finance/reports/ReceivablesReport";
@@ -7,6 +7,15 @@ import { CostCenterDashboard } from "@/components/finance/reports/CostCenterDash
 import { MonthlyFlowChart } from "@/components/finance/reports/MonthlyFlowChart";
 import { ExecutiveSummary } from "@/components/finance/reports/ExecutiveSummary";
 import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
+
+const tabs = [
+  { value: "summary", label: "Resumo Executivo", icon: LayoutDashboard },
+  { value: "payables", label: "Contas a Pagar", icon: ArrowDownCircle },
+  { value: "receivables", label: "Contas a Receber", icon: ArrowUpCircle },
+  { value: "paid", label: "Contas Pagas", icon: CheckCircle2 },
+  { value: "costcenter", label: "Centros de Custo", icon: PieChart },
+  { value: "monthly", label: "Fluxo Mensal", icon: BarChart3 },
+];
 
 const Relatorios = () => {
   return (
@@ -26,12 +35,12 @@ const Relatorios = () => {
       <Tabs defaultValue="summary">
         <ScrollArea className="w-full">
           <TabsList className="inline-flex w-auto min-w-full">
-            <TabsTrigger value="summary">Resumo Executivo</TabsTrigger>
-            <TabsTrigger value="payables">Contas a Pagar</TabsTrigger>
-            <TabsTrigger value="receivables">Contas a Receber</TabsTrigger>
-            <TabsTrigger value="paid">Contas Pagas</TabsTrigger>
-            <TabsTrigger value="costcenter">Centros de Custo</TabsTrigger>
-            <TabsTrigger value="monthly">Fluxo Mensal</TabsTrigger>
+            {tabs.map(tab => (
+              <TabsTrigger key={tab.value} value={tab.value} className="gap-1.5">
+                <tab.icon className="w-4 h-4" />
+                {tab.label}
+              </TabsTrigger>
+            ))}
           </TabsList>
           <ScrollBar orientation="horizontal" />
         </ScrollArea>
