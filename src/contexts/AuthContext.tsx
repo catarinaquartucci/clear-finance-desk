@@ -187,7 +187,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     });
 
     return () => {
-      console.log('🧹 [AuthContext] Cleanup - unsubscribe');
+      if (import.meta.env.DEV) console.log('🧹 [AuthContext] Cleanup - unsubscribe');
       subscription.unsubscribe();
     };
   }, []);
