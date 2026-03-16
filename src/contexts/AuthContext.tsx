@@ -78,7 +78,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       }
 
       const roles = data.map(r => r.role as string);
-      console.log('📋 [AuthContext] Roles do usuário:', roles);
+      if (import.meta.env.DEV) console.log('📋 [AuthContext] Roles do usuário:', roles);
       
       const adminStatus = roles.includes("admin");
       const financeStatus = roles.includes("finance");
