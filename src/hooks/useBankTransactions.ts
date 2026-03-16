@@ -67,14 +67,12 @@ export const useBankTransactions = (bankAccountId?: string, month?: string) => {
       for (let i = 0; i < rows.length; i += batchSize) {
         const batch = rows.slice(i, i + batchSize);
         
-        // Try upsert first (requires unique index on import_hash)
         const { data, error } = await supabase
           .from("bank_transactions")
           .upsert(batch, { onConflict: "import_hash", ignoreDuplicates: true })
           .select();
         
         if (error) {
-          // Fallback: if no unique constraint, insert one by one ignoring duplicates
           if (error.code === "42P10" || error.message?.includes("ON CONFLICT")) {
             for (const row of batch) {
               const { data: single, error: singleErr } = await supabase
@@ -98,7 +96,6 @@ export const useBankTransactions = (bankAccountId?: string, month?: string) => {
       return { inserted, skipped };
     },
     onSuccess: async ({ inserted, skipped }) => {
-      // Update bank account current_balance from latest transaction
       if (bankAccountId && inserted > 0) {
         try {
           const { data: latestTx } = await supabase
@@ -131,11 +128,13 @@ export const useBankTransactions = (bankAccountId?: string, month?: string) => {
   });
 
   const conciliate = useMutation({
-    mutationFn: async ({ transactionId, withType, withId }: {
+    mutationFn: async ({ transactionId, withType, withId, conciliatedAmount }: {
       transactionId: string;
       withType: string;
       withId: string;
+      conciliatedAmount?: number;
     }) => {
+      // Mark bank transaction as conciliated
       const { error } = await supabase
         .from("bank_transactions")
         .update({
@@ -146,9 +145,60 @@ export const useBankTransactions = (bankAccountId?: string, month?: string) => {
         })
         .eq("id", transactionId);
       if (error) throw error;
+
+      // Handle partial payment on the payable
+      if (withType === "payable" && conciliatedAmount != null) {
+        const { data: payable, error: pErr } = await supabase
+          .from("payables")
+          .select("amount")
+          .eq("id", withId)
+          .single();
+        if (pErr) throw pErr;
+
+        const payableAmount = Number(payable.amount);
+        const remaining = payableAmount - conciliatedAmount;
+
+        if (remaining > 0.01) {
+          // Partial: reduce amount, keep open
+          await supabase
+            .from("payables")
+            .update({ amount: remaining })
+            .eq("id", withId);
+        } else {
+          // Full: mark as paid
+          await supabase
+            .from("payables")
+            .update({ status: "paid", paid_date: new Date().toISOString().split("T")[0] })
+            .eq("id", withId);
+        }
+      } else if (withType === "receivable" && conciliatedAmount != null) {
+        const { data: receivable, error: rErr } = await supabase
+          .from("receivables")
+          .select("amount")
+          .eq("id", withId)
+          .single();
+        if (rErr) throw rErr;
+
+        const recAmount = Number(receivable.amount);
+        const remaining = recAmount - conciliatedAmount;
+
+        if (remaining > 0.01) {
+          await supabase
+            .from("receivables")
+            .update({ amount: remaining })
+            .eq("id", withId);
+        } else {
+          await supabase
+            .from("receivables")
+            .update({ status: "received", received_date: new Date().toISOString().split("T")[0] })
+            .eq("id", withId);
+        }
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["bank-transactions"] });
+      queryClient.invalidateQueries({ queryKey: ["payables"] });
+      queryClient.invalidateQueries({ queryKey: ["receivables"] });
       toast.success("Conciliação realizada!");
     },
     onError: (error) => {
@@ -204,6 +254,28 @@ export const useBankTransactions = (bankAccountId?: string, month?: string) => {
     },
   });
 
+  const markAsIgnored = useMutation({
+    mutationFn: async (transactionId: string) => {
+      const { error } = await supabase
+        .from("bank_transactions")
+        .update({
+          conciliated: true,
+          conciliated_with_type: "ignored",
+          conciliated_with_id: null,
+          conciliated_at: new Date().toISOString(),
+        })
+        .eq("id", transactionId);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["bank-transactions"] });
+      toast.success("Lançamento ignorado!");
+    },
+    onError: (error) => {
+      toast.error("Erro: " + error.message);
+    },
+  });
+
   const stats = {
     total: transactions?.length ?? 0,
     conciliated: transactions?.filter(t => t.conciliated).length ?? 0,
@@ -223,5 +295,6 @@ export const useBankTransactions = (bankAccountId?: string, month?: string) => {
     unconciliate: unconciliate.mutate,
     batchConciliate: batchConciliate.mutate,
     isBatchConciliating: batchConciliate.isPending,
+    markAsIgnored: markAsIgnored.mutate,
   };
 };
