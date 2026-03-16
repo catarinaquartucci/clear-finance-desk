@@ -53,7 +53,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         .select("role")
         .eq("user_id", userId);
 
-      console.log('📊 [AuthContext] Resposta da query user_roles:', { 
+      if (import.meta.env.DEV) console.log('📊 [AuthContext] Resposta da query user_roles:', { 
         userId,
         data, 
         error,
