@@ -72,7 +72,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       }
 
       if (!data || data.length === 0) {
-        console.warn('⚠️ [AuthContext] Nenhuma role encontrada para o usuário:', userId);
+        if (import.meta.env.DEV) console.warn('⚠️ [AuthContext] Nenhuma role encontrada para o usuário:', userId);
         resetRoles();
         return;
       }
