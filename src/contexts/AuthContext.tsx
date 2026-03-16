@@ -202,7 +202,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
   // Log do estado atual para debugging
   useEffect(() => {
-    console.log('📊 [AuthContext] Estado atual:', {
+    if (import.meta.env.DEV) console.log('📊 [AuthContext] Estado atual:', {
       userId: user?.id,
       email: user?.email,
       isAdmin,
