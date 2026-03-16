@@ -45,7 +45,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
   const checkUserRoles = async (userId: string) => {
     try {
-      console.log('🔍 [AuthContext] Iniciando verificação de roles para userId:', userId);
+      if (import.meta.env.DEV) console.log('🔍 [AuthContext] Iniciando verificação de roles para userId:', userId);
       
       // Query direta na tabela user_roles
       const { data, error } = await supabase
