@@ -139,7 +139,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   };
 
   useEffect(() => {
-    console.log('🚀 [AuthContext] Inicializando AuthProvider');
+    if (import.meta.env.DEV) console.log('🚀 [AuthContext] Inicializando AuthProvider');
     
     // Configurar listener PRIMEIRO
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
