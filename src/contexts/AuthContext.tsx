@@ -132,7 +132,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
   const refreshRoles = async () => {
     if (user?.id) {
-      console.log('🔄 [AuthContext] Refresh de roles solicitado');
+      if (import.meta.env.DEV) console.log('🔄 [AuthContext] Refresh de roles solicitado');
       setLoading(true);
       await checkUserRoles(user.id);
     }
