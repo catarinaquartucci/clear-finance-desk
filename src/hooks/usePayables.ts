@@ -21,6 +21,7 @@ export interface Payable {
   updated_at: string;
   supplier?: { id: string; name: string; document: string | null } | null;
   cost_center?: { id: string; name: string; code: string } | null;
+  chart_account?: { id: string; name: string; code: string } | null;
 }
 
 export interface PayableInsert {
@@ -50,11 +51,15 @@ export const usePayables = (statusFilter?: string, companyId?: string) => {
         .select(`
           *,
           supplier:suppliers(id, name, document),
-          cost_center:cost_centers(id, name, code)
+          cost_center:cost_centers(id, name, code),
+          chart_account:chart_of_accounts(id, name, code)
         `)
         .order("due_date", { ascending: true });
 
-      if (statusFilter && statusFilter !== "all") {
+      // For "overdue" we fetch open and filter client-side
+      if (statusFilter === "overdue") {
+        query = query.eq("status", "open");
+      } else if (statusFilter && statusFilter !== "all") {
         query = query.eq("status", statusFilter);
       }
       if (companyId && companyId !== "all") {
@@ -63,7 +68,16 @@ export const usePayables = (statusFilter?: string, companyId?: string) => {
 
       const { data, error } = await query;
       if (error) throw error;
-      return data as Payable[];
+
+      let results = data as Payable[];
+
+      // Client-side filter for overdue
+      if (statusFilter === "overdue") {
+        const today = new Date().toISOString().split("T")[0];
+        results = results.filter(p => p.due_date < today);
+      }
+
+      return results;
     },
   });
 
@@ -139,6 +153,28 @@ export const usePayables = (statusFilter?: string, companyId?: string) => {
     },
   });
 
+  const markAsPaidBatch = useMutation({
+    mutationFn: async ({ ids, paid_date, payment_method, bank_account_id }: {
+      ids: string[];
+      paid_date: string;
+      payment_method?: string;
+      bank_account_id?: string;
+    }) => {
+      const { error } = await supabase
+        .from("payables")
+        .update({ status: "paid", paid_date, payment_method, bank_account_id })
+        .in("id", ids);
+      if (error) throw error;
+    },
+    onSuccess: (_, vars) => {
+      queryClient.invalidateQueries({ queryKey: ["payables"] });
+      toast.success(`${vars.ids.length} título(s) marcado(s) como pago(s)!`);
+    },
+    onError: (error) => {
+      toast.error("Erro ao dar baixa em lote: " + error.message);
+    },
+  });
+
   // Summary stats
   const today = new Date().toISOString().split("T")[0];
   const nextWeek = new Date(Date.now() + 7 * 86400000).toISOString().split("T")[0];
@@ -159,6 +195,8 @@ export const usePayables = (statusFilter?: string, companyId?: string) => {
     updatePayable: updatePayable.mutate,
     deletePayable: deletePayable.mutate,
     markAsPaid: markAsPaid.mutate,
+    markAsPaidBatch: markAsPaidBatch.mutate,
     isCreating: createPayable.isPending,
+    isBatchPaying: markAsPaidBatch.isPending,
   };
 };

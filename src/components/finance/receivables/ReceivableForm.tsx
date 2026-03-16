@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -35,9 +35,29 @@ export const ReceivableForm = ({ open, onOpenChange, onSubmit, isSubmitting }: R
     installment_total: 1,
   });
 
+  const [amountStr, setAmountStr] = useState("");
+
+  useEffect(() => {
+    if (open) {
+      setAmountStr("");
+      setForm({
+        description: "",
+        amount: 0,
+        due_date: new Date().toISOString().split("T")[0],
+        customer_id: null,
+        cost_center_id: null,
+        bank_account_id: null,
+        payment_method: null,
+        notes: null,
+        installment_total: 1,
+      });
+    }
+  }, [open]);
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!form.description || !form.amount || !form.due_date) return;
+    const amount = parseFloat(amountStr);
+    if (!form.description || !amount || !form.due_date) return;
 
     const total = form.installment_total ?? 1;
     if (total > 1) {
@@ -46,7 +66,7 @@ export const ReceivableForm = ({ open, onOpenChange, onSubmit, isSubmitting }: R
         dueDate.setMonth(dueDate.getMonth() + i);
         onSubmit({
           ...form,
-          amount: Number((form.amount / total).toFixed(2)),
+          amount: Number((amount / total).toFixed(2)),
           due_date: dueDate.toISOString().split("T")[0],
           installment_number: i + 1,
           installment_total: total,
@@ -54,15 +74,9 @@ export const ReceivableForm = ({ open, onOpenChange, onSubmit, isSubmitting }: R
         });
       }
     } else {
-      onSubmit({ ...form, installment_number: 1, installment_total: 1 });
+      onSubmit({ ...form, amount, installment_number: 1, installment_total: 1 });
     }
     onOpenChange(false);
-    setForm({
-      description: "", amount: 0,
-      due_date: new Date().toISOString().split("T")[0],
-      customer_id: null, cost_center_id: null, bank_account_id: null,
-      payment_method: null, notes: null, installment_total: 1,
-    });
   };
 
   const set = (key: keyof ReceivableInsert, value: any) =>
@@ -83,7 +97,19 @@ export const ReceivableForm = ({ open, onOpenChange, onSubmit, isSubmitting }: R
           <div className="grid grid-cols-2 gap-4">
             <div>
               <Label>Valor total *</Label>
-              <Input type="number" step="0.01" min="0.01" value={form.amount || ""} onChange={(e) => set("amount", Number(e.target.value))} required />
+              <Input
+                type="text"
+                inputMode="decimal"
+                placeholder="0.00"
+                value={amountStr}
+                onChange={(e) => {
+                  const v = e.target.value;
+                  if (v === "" || /^\d*\.?\d{0,2}$/.test(v)) {
+                    setAmountStr(v);
+                  }
+                }}
+                required
+              />
             </div>
             <div>
               <Label>Vencimento *</Label>

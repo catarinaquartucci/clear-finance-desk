@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -8,6 +8,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { useSuppliers } from "@/hooks/useSuppliers";
 import { useCostCenters } from "@/hooks/useCostCenters";
 import { useBankAccounts } from "@/hooks/useBankAccounts";
+import { useChartOfAccounts } from "@/hooks/useChartOfAccounts";
 import { CompanyFilter } from "@/components/finance/CompanyFilter";
 import type { PayableInsert } from "@/hooks/usePayables";
 
@@ -15,51 +16,91 @@ interface PayableFormProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onSubmit: (data: PayableInsert) => void;
+  onUpdate?: (data: Partial<PayableInsert> & { id: string }) => void;
   isSubmitting?: boolean;
-  defaultValues?: Partial<PayableInsert>;
+  defaultValues?: Partial<PayableInsert> & { id?: string };
   title?: string;
-  /** If true, also generate installments */
   allowInstallments?: boolean;
 }
+
+const emptyForm = (): PayableInsert & { company_id?: string | null } => ({
+  description: "",
+  amount: 0,
+  due_date: new Date().toISOString().split("T")[0],
+  supplier_id: null,
+  cost_center_id: null,
+  bank_account_id: null,
+  chart_account_id: null,
+  payment_method: null,
+  notes: null,
+  installment_total: 1,
+  company_id: null,
+});
 
 export const PayableForm = ({
   open,
   onOpenChange,
   onSubmit,
+  onUpdate,
   isSubmitting,
   defaultValues,
-  title = "Nova Conta a Pagar",
+  title,
   allowInstallments = true,
 }: PayableFormProps) => {
   const { data: suppliers } = useSuppliers();
   const { data: costCenters } = useCostCenters();
   const { data: bankAccounts } = useBankAccounts();
+  const { data: chartAccounts } = useChartOfAccounts();
 
-  const [form, setForm] = useState<PayableInsert>({
-    description: defaultValues?.description ?? "",
-    amount: defaultValues?.amount ?? 0,
-    due_date: defaultValues?.due_date ?? new Date().toISOString().split("T")[0],
-    supplier_id: defaultValues?.supplier_id ?? null,
-    cost_center_id: defaultValues?.cost_center_id ?? null,
-    bank_account_id: defaultValues?.bank_account_id ?? null,
-    payment_method: defaultValues?.payment_method ?? null,
-    notes: defaultValues?.notes ?? null,
-    installment_total: defaultValues?.installment_total ?? 1,
-  });
+  const isEdit = !!defaultValues?.id;
+
+  const [form, setForm] = useState<PayableInsert & { company_id?: string | null }>(emptyForm());
+  const [amountStr, setAmountStr] = useState("");
+
+  useEffect(() => {
+    if (open && defaultValues) {
+      setForm({
+        ...emptyForm(),
+        ...defaultValues,
+        company_id: (defaultValues as any).company_id ?? null,
+      });
+      setAmountStr(defaultValues.amount ? String(defaultValues.amount) : "");
+    } else if (open) {
+      setForm(emptyForm());
+      setAmountStr("");
+    }
+  }, [open, defaultValues]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!form.description || !form.amount || !form.due_date) return;
+    const amount = parseFloat(amountStr);
+    if (!form.description || !amount || !form.due_date) return;
+
+    if (isEdit && onUpdate) {
+      onUpdate({
+        id: defaultValues!.id!,
+        description: form.description,
+        amount,
+        due_date: form.due_date,
+        supplier_id: form.supplier_id,
+        cost_center_id: form.cost_center_id,
+        bank_account_id: form.bank_account_id,
+        chart_account_id: form.chart_account_id,
+        payment_method: form.payment_method,
+        notes: form.notes,
+      });
+      onOpenChange(false);
+      return;
+    }
 
     const total = form.installment_total ?? 1;
     if (total > 1 && allowInstallments) {
-      // Generate multiple installments
       for (let i = 0; i < total; i++) {
         const dueDate = new Date(form.due_date);
         dueDate.setMonth(dueDate.getMonth() + i);
         onSubmit({
           ...form,
-          amount: Number((form.amount / total).toFixed(2)),
+          amount: Number((amount / total).toFixed(2)),
           due_date: dueDate.toISOString().split("T")[0],
           installment_number: i + 1,
           installment_total: total,
@@ -67,31 +108,21 @@ export const PayableForm = ({
         });
       }
     } else {
-      onSubmit({ ...form, installment_number: 1, installment_total: 1 });
+      onSubmit({ ...form, amount, installment_number: 1, installment_total: 1 });
     }
     onOpenChange(false);
-    // Reset
-    setForm({
-      description: "",
-      amount: 0,
-      due_date: new Date().toISOString().split("T")[0],
-      supplier_id: null,
-      cost_center_id: null,
-      bank_account_id: null,
-      payment_method: null,
-      notes: null,
-      installment_total: 1,
-    });
   };
 
-  const set = (key: keyof PayableInsert, value: any) =>
+  const set = (key: string, value: any) =>
     setForm((prev) => ({ ...prev, [key]: value }));
+
+  const formTitle = title ?? (isEdit ? "Editar Conta a Pagar" : "Nova Conta a Pagar");
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>{title}</DialogTitle>
+          <DialogTitle>{formTitle}</DialogTitle>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
@@ -102,7 +133,19 @@ export const PayableForm = ({
           <div className="grid grid-cols-2 gap-4">
             <div>
               <Label>Valor total *</Label>
-              <Input type="number" step="0.01" min="0.01" value={form.amount || ""} onChange={(e) => set("amount", Number(e.target.value))} required />
+              <Input
+                type="text"
+                inputMode="decimal"
+                placeholder="0.00"
+                value={amountStr}
+                onChange={(e) => {
+                  const v = e.target.value;
+                  if (v === "" || /^\d*\.?\d{0,2}$/.test(v)) {
+                    setAmountStr(v);
+                  }
+                }}
+                required
+              />
             </div>
             <div>
               <Label>Vencimento *</Label>
@@ -165,7 +208,7 @@ export const PayableForm = ({
                 </SelectContent>
               </Select>
             </div>
-            {allowInstallments && (
+            {allowInstallments && !isEdit && (
               <div>
                 <Label>Parcelas</Label>
                 <Input type="number" min="1" max="60" value={form.installment_total ?? 1} onChange={(e) => set("installment_total", Number(e.target.value))} />
@@ -174,10 +217,23 @@ export const PayableForm = ({
           </div>
 
           <div>
+            <Label>Classificação Financeira</Label>
+            <Select value={form.chart_account_id ?? "none"} onValueChange={(v) => set("chart_account_id", v === "none" ? null : v)}>
+              <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="none">Nenhuma</SelectItem>
+                {chartAccounts?.filter(c => c.active).map((c) => (
+                  <SelectItem key={c.id} value={c.id}>{c.code} - {c.name}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div>
             <Label>Filial</Label>
             <CompanyFilter
-              value={(form as any).company_id ?? "none"}
-              onChange={(v) => set("company_id" as any, v === "none" ? null : v)}
+              value={form.company_id ?? "none"}
+              onChange={(v) => set("company_id", v === "none" ? null : v)}
               formMode
               className="w-full"
             />
