@@ -1,113 +1,76 @@
 
 
-# Remover Devolucao + Novo Modulo de Relatorios Avancados
+# Conciliação Bancária — Formato Agenda (Calendário por Dia)
 
-## 1. Remover aba "Devolucao" da pagina Solicitacoes
+## Referência
+A imagem enviada mostra um sistema de tesouraria com calendário mensal onde se clica no dia para ver os movimentos daquele dia, com classificação financeira, histórico, valor e +/-.
 
-**Arquivo**: `src/pages/Solicitacoes.tsx`
-- Remover a tab "Devolucao" e seu conteudo (`DevolucaoForm`)
-- Remover import de `DevolucaoForm` e `TrendingUp`
-- Ajustar grid de tabs de 4 para 3 colunas
-- Na aba "Minhas Solicitacoes", remover `MyDevolucoesList`
+## Proposta
 
-**Arquivo**: `src/pages/admin/AdminDashboard.tsx`
-- Remover o AccordionItem de "Devoluções" e imports relacionados (`DevolucoesList`, `useDevolucoes`)
+Substituir a tabela flat por uma visualização de **agenda/calendário mensal** onde:
+1. Um grid de calendário mostra todos os dias do mês selecionado
+2. Cada dia mostra um indicador visual: quantidade de transações, total do dia, e se há pendentes
+3. Ao clicar num dia, expande-se abaixo (ou ao lado) a lista de transações daquele dia
+4. Indicador de **última conciliação**: badge no topo mostrando a data da última transação conciliada
 
----
+### Layout
 
-## 2. Reformular pagina de Relatorios Financeiros
-
-**Arquivo**: `src/pages/financeiro/Relatorios.tsx` - Reescrever com novas abas
-
-### Novas abas:
-
-| Aba | Descricao | Filtros |
-|-----|-----------|---------|
-| Contas a Pagar | Listagem de payables com status open/overdue | Periodo (de-ate) + Filial |
-| Contas a Receber | Listagem de receivables com status open/overdue | Periodo (de-ate) + Filial |
-| Contas Pagas | Payables ja pagos com data de pagamento | Periodo (de-ate) + Filial |
-| Gastos por Centro de Custo | Dashboard com grafico de pizza/barras + tabela | Periodo + Filial |
-| DRE | Mantido como esta | Ano |
-| Aging | Mantido como esta | - |
-
-### Componentes novos:
-
-- `src/components/finance/reports/PayablesReport.tsx` - Tabela de contas a pagar com filtros de periodo e filial, botoes de exportar Excel e PDF
-- `src/components/finance/reports/ReceivablesReport.tsx` - Tabela de contas a receber com filtros
-- `src/components/finance/reports/PaidReport.tsx` - Contas pagas com data de pagamento
-- `src/components/finance/reports/CostCenterDashboard.tsx` - Dashboard com grafico de rosca (recharts PieChart) mostrando distribuicao de gastos por centro de custo + tabela detalhada
-- `src/components/finance/reports/ReportFilters.tsx` - Componente reutilizavel com DatePicker "De" e "Ate" + CompanyFilter + botoes de exportar
-
-### Exportacao:
-
-- **Excel**: Usar biblioteca `xlsx` (ja instalada) para gerar planilhas
-- **PDF**: Gerar via `window.print()` com CSS de impressao dedicado, ou criar uma funcao que monta uma tabela HTML e abre em nova janela para imprimir como PDF
-
----
-
-## 3. Dashboards e Relatorios Sugeridos (incluidos na implementacao)
-
-Alem dos solicitados, incluir as seguintes abas extras no modulo de Relatorios:
-
-1. **Fluxo Mensal** - Grafico de barras comparando receitas vs despesas mes a mes (usando dados de payables/receivables agrupados por mes). Filtro por ano e filial.
-
-2. **Top Fornecedores** - Ranking dos maiores fornecedores por valor pago, com grafico de barras horizontal. Filtro por periodo e filial.
-
-3. **Resumo Executivo** - Card com KPIs: total a pagar, total a receber, saldo liquido, taxa de inadimplencia, ticket medio. Exportavel em PDF como relatorio executivo de uma pagina.
-
-Estes serao adicionados como abas extras no mesmo componente de Relatorios.
-
----
-
-## 4. Detalhes Tecnicos
-
-### Hooks atualizados/novos:
-
-**`src/hooks/useFinancialReports.ts`** - Adicionar novos hooks:
-- `usePayablesReport(dateFrom, dateTo, companyId)` - Busca payables com joins em suppliers e cost_centers, filtrando por periodo e company_id
-- `useReceivablesReport(dateFrom, dateTo, companyId)` - Idem para receivables com join em customers
-- `usePaidReport(dateFrom, dateTo, companyId)` - Payables com status "paid", usando paid_date como filtro de periodo
-- `useCostCenterDashboard(dateFrom, dateTo, companyId)` - Agrupa payables por cost_center_id, retorna totais para grafico
-- `useMonthlyFlowReport(year, companyId)` - Agrupa receitas e despesas por mes
-- `useExecutiveSummary(dateFrom, dateTo, companyId)` - Calcula KPIs agregados
-
-### Exportacao Excel (usando xlsx):
-
-```typescript
-import * as XLSX from "xlsx";
-
-function exportToExcel(data: any[], filename: string) {
-  const ws = XLSX.utils.json_to_sheet(data);
-  const wb = XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(wb, ws, "Relatório");
-  XLSX.writeFile(wb, `${filename}.xlsx`);
-}
+```text
+┌─ Conta | Mês | Filtros | Botões ──────────────────┐
+│                                                     │
+│  Última conciliação: 06/03/2026                    │
+│                                                     │
+│  ┌──┬──┬──┬──┬──┬──┬──┐                           │
+│  │Do│Se│Te│Qu│Qu│Se│Sá│  ← Cabeçalho dias         │
+│  ├──┼──┼──┼──┼──┼──┼──┤                           │
+│  │  │  │  │  │  │  │ 1│                           │
+│  │ 2│ 3│ 4│ 5│[6]│7│ 8│  ← [6] = dia selecionado │
+│  │  │  │  │  │3tx│  │  │  ← indicador transações  │
+│  │  │  │  │  │●  │  │  │  ← ● = tem pendentes     │
+│  └──┴──┴──┴──┴──┴──┴──┘                           │
+│                                                     │
+│  ═══ Movimentos de 06/03/2026 ═══                  │
+│  Classificação  │ Histórico        │ Valor   │ +/- │
+│  APORTE         │ PIX RECEBIDO...  │11.800   │  +  │
+│  RENDIMENTOS    │ RENDIMENTO       │   0,01  │  +  │
+│  DESP. FUNC.    │ DESP. FUNC...    │ 5.697   │  -  │
+│  ...            │                  │         │     │
+│                                                     │
+│  Saldo Anterior: 111,66  │  Créditos: 11.800,01   │
+│  Débitos: 11.853,46      │  Saldo Final: 58,21    │
+└─────────────────────────────────────────────────────┘
 ```
 
-### Exportacao PDF:
+### Alterações
 
-Criar funcao `exportToPDF` que monta HTML com estilos inline, abre em nova janela e chama `window.print()`.
+**1. `src/components/finance/reconciliation/ReconciliationPanel.tsx`** — Reescrever
+- Substituir a tabela por dois componentes: `ReconciliationCalendar` + `DayTransactionsList`
+- State: `selectedDay: number | null`
+- Agrupar transações por dia (`Map<string, BankTransaction[]>`)
+- Calcular data da última conciliação (max `conciliated_at` das transações)
+- Manter toolbar existente (conta, mês, filtros, importar, auto-conciliar)
+- Manter stats cards existentes
+- Adicionar badge "Última conciliação: dd/MM/yyyy"
 
-### Arquivos modificados:
+**2. Criar `src/components/finance/reconciliation/ReconciliationCalendar.tsx`**
+- Grid 7 colunas (Dom–Sáb) com os dias do mês
+- Cada célula mostra: número do dia, contagem de transações, indicador de pendentes (ponto colorido)
+- Dia selecionado destacado com bg-primary
+- Dias com transações pendentes: borda amber; todos conciliados: borda emerald
 
-- `src/pages/Solicitacoes.tsx` - Remover tab devolucao
-- `src/pages/admin/AdminDashboard.tsx` - Remover secao devoluções
-- `src/pages/financeiro/Relatorios.tsx` - Reescrever com todas as novas abas
-- `src/hooks/useFinancialReports.ts` - Adicionar novos hooks
+**3. Criar `src/components/finance/reconciliation/DayTransactionsList.tsx`**
+- Recebe transações do dia selecionado
+- Tabela com: Classificação, Descrição/Histórico, Valor, +/-, Status, Ações (conciliar/ignorar/desfazer)
+- Resumo do dia no rodapé: saldo anterior, créditos, débitos, saldo final
+- Mantém todas as ações existentes (conciliar, ignorar, desfazer)
 
-### Arquivos novos:
+### Arquivos
 
-- `src/components/finance/reports/ReportFilters.tsx`
-- `src/components/finance/reports/PayablesReport.tsx`
-- `src/components/finance/reports/ReceivablesReport.tsx`
-- `src/components/finance/reports/PaidReport.tsx`
-- `src/components/finance/reports/CostCenterDashboard.tsx`
-- `src/components/finance/reports/MonthlyFlowChart.tsx`
-- `src/components/finance/reports/TopSuppliersChart.tsx`
-- `src/components/finance/reports/ExecutiveSummary.tsx`
-- `src/lib/exportUtils.ts` - Funcoes utilitarias de exportacao (Excel + PDF)
+| Arquivo | Ação |
+|---------|------|
+| `src/components/finance/reconciliation/ReconciliationPanel.tsx` | Reescrever — agenda + badge última conciliação |
+| `src/components/finance/reconciliation/ReconciliationCalendar.tsx` | Criar — grid calendário mensal |
+| `src/components/finance/reconciliation/DayTransactionsList.tsx` | Criar — lista de transações do dia |
 
-### Nenhuma mudanca no banco de dados
-
-Todos os dados ja existem nas tabelas `payables`, `receivables`, `suppliers`, `customers`, `cost_centers`. Os novos relatorios sao consultas com filtros sobre dados existentes.
+Dialogs existentes (Import, Conciliate, Auto) permanecem inalterados.
 
