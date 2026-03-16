@@ -13,7 +13,44 @@ Deno.serve(async (req) => {
   try {
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-    
+
+    // Verify authentication
+    const authHeader = req.headers.get('Authorization');
+    if (!authHeader) {
+      return new Response(JSON.stringify({ error: 'Unauthorized' }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        status: 401,
+      });
+    }
+
+    const anonClient = createClient(supabaseUrl, Deno.env.get('SUPABASE_ANON_KEY')!, {
+      auth: { autoRefreshToken: false, persistSession: false },
+      global: { headers: { Authorization: authHeader } },
+    });
+
+    const { data: { user }, error: authError } = await anonClient.auth.getUser();
+    if (authError || !user) {
+      return new Response(JSON.stringify({ error: 'Unauthorized' }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        status: 401,
+      });
+    }
+
+    // Verify admin role
+    const { data: roleData } = await anonClient
+      .from('user_roles')
+      .select('role')
+      .eq('user_id', user.id)
+      .eq('role', 'admin')
+      .maybeSingle();
+
+    if (!roleData) {
+      return new Response(JSON.stringify({ error: 'Forbidden' }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        status: 403,
+      });
+    }
+
     const supabase = createClient(supabaseUrl, supabaseServiceKey, {
       auth: { autoRefreshToken: false, persistSession: false }
     });
@@ -102,24 +139,22 @@ Deno.serve(async (req) => {
     console.log('Colaboradores deletados da tabela');
 
     // 4. Buscar usuários criados na importação problemática (01/12/2025)
-    const { data: authUsers, error: authError } = await supabase.auth.admin.listUsers();
+    const { data: authUsers, error: listAuthError } = await supabase.auth.admin.listUsers();
     
-    if (authError) {
-      console.error('Erro ao listar usuários:', authError);
-      throw authError;
+    if (listAuthError) {
+      console.error('Erro ao listar usuários:', listAuthError);
+      throw listAuthError;
     }
 
-    // Filtrar usuários para deletar:
-    // - Criados em 01/12/2025 OU estão na lista de user_ids dos colaboradores
-    // - NÃO são a Camila admin
-    const usersToDelete = authUsers.users.filter(user => {
-      if (user.email?.toLowerCase() === adminEmail.toLowerCase()) {
-        return false; // Preservar Camila
+    // Filtrar usuários para deletar
+    const usersToDelete = authUsers.users.filter(u => {
+      if (u.email?.toLowerCase() === adminEmail.toLowerCase()) {
+        return false;
       }
       
-      const createdAt = new Date(user.created_at);
+      const createdAt = new Date(u.created_at);
       const isFromFailedImport = createdAt >= new Date('2025-12-01') && createdAt < new Date('2025-12-02');
-      const isLinkedToColab = userIdsToDelete.includes(user.id);
+      const isLinkedToColab = userIdsToDelete.includes(u.id);
       
       return isFromFailedImport || isLinkedToColab;
     });
@@ -127,23 +162,20 @@ Deno.serve(async (req) => {
     console.log(`Encontrados ${usersToDelete.length} usuários para deletar`);
 
     // 5. Deletar usuários de auth.users
-    const deletedUsers: string[] = [];
-    const failedUsers: { email: string; error: string }[] = [];
+    const deletedUsersComplete: string[] = [];
+    const failedUsersComplete: { email: string; error: string }[] = [];
 
-    for (const user of usersToDelete) {
+    for (const u of usersToDelete) {
       try {
-        const { error: deleteUserError } = await supabase.auth.admin.deleteUser(user.id);
+        const { error: deleteUserError } = await supabase.auth.admin.deleteUser(u.id);
         
         if (deleteUserError) {
-          console.error(`Erro ao deletar usuário ${user.email}:`, deleteUserError);
-          failedUsers.push({ email: user.email || user.id, error: deleteUserError.message });
+          failedUsersComplete.push({ email: u.email || u.id, error: deleteUserError.message });
         } else {
-          deletedUsers.push(user.email || user.id);
-          console.log(`Usuário deletado: ${user.email}`);
+          deletedUsersComplete.push(u.email || u.id);
         }
       } catch (err) {
-        console.error(`Exceção ao deletar usuário ${user.email}:`, err);
-        failedUsers.push({ email: user.email || user.id, error: String(err) });
+        failedUsersComplete.push({ email: u.email || u.id, error: String(err) });
       }
     }
 
@@ -151,13 +183,9 @@ Deno.serve(async (req) => {
       success: true,
       mode: 'complete',
       colaboradoresDeletados: colaboradores?.length || 0,
-      usuariosDeletados: deletedUsers.length,
+      usuariosDeletados: deletedUsersComplete.length,
       usuariosPreservados: ['camila.adegas@viverdeia.ai'],
-      falhas: failedUsers,
-      detalhes: {
-        deletedUsers,
-        failedUsers
-      }
+      falhas: failedUsersComplete,
     };
 
     console.log('Limpeza concluída:', result);
