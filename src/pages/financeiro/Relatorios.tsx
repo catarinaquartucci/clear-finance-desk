@@ -32,9 +32,6 @@ const Relatorios = () => {
             <TabsTrigger value="paid">Contas Pagas</TabsTrigger>
             <TabsTrigger value="costcenter">Centros de Custo</TabsTrigger>
             <TabsTrigger value="monthly">Fluxo Mensal</TabsTrigger>
-            <TabsTrigger value="suppliers">Top Fornecedores</TabsTrigger>
-            <TabsTrigger value="dre">DRE</TabsTrigger>
-            <TabsTrigger value="aging">Aging</TabsTrigger>
           </TabsList>
           <ScrollBar orientation="horizontal" />
         </ScrollArea>
