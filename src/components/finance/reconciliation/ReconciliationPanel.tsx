@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { format } from "date-fns";
 import {
-  Upload, Search, CheckCircle2, Circle, Link2, Unlink, ArrowDownCircle, ArrowUpCircle, Wand2
+  Upload, Search, CheckCircle2, Circle, Link2, Unlink, ArrowDownCircle, ArrowUpCircle, Wand2, EyeOff
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -35,6 +35,7 @@ export const ReconciliationPanel = () => {
   const [search, setSearch] = useState("");
   const [conciliateId, setConciliateId] = useState<string | null>(null);
   const [showFilter, setShowFilter] = useState<"all" | "pending" | "conciliated">("all");
+  const [typeFilter, setTypeFilter] = useState<"debit" | "credit" | "all">("debit");
   const [autoOpen, setAutoOpen] = useState(false);
   const [autoMatches, setAutoMatches] = useState<MatchCandidate[]>([]);
 
@@ -43,6 +44,7 @@ export const ReconciliationPanel = () => {
     importTransactions, isImporting,
     conciliate, unconciliate,
     batchConciliate, isBatchConciliating,
+    markAsIgnored,
   } = useBankTransactions(selectedAccount, selectedMonth);
 
   const { payables } = usePayables("open");
@@ -53,7 +55,8 @@ export const ReconciliationPanel = () => {
     const matchStatus = showFilter === "all" ||
       (showFilter === "pending" && !t.conciliated) ||
       (showFilter === "conciliated" && t.conciliated);
-    return matchSearch && matchStatus;
+    const matchType = typeFilter === "all" || t.type === typeFilter;
+    return matchSearch && matchStatus && matchType;
   }) ?? [];
 
   const fmt = (v: number) =>
@@ -164,11 +167,19 @@ export const ReconciliationPanel = () => {
 
       {/* Toolbar */}
       {selectedAccount && (
-        <div className="flex gap-2 items-center">
+        <div className="flex gap-2 items-center flex-wrap">
           <div className="relative flex-1 max-w-xs">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
             <Input placeholder="Buscar..." value={search} onChange={(e) => setSearch(e.target.value)} className="pl-9" />
           </div>
+          <Select value={typeFilter} onValueChange={(v) => setTypeFilter(v as any)}>
+            <SelectTrigger className="w-32"><SelectValue /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="debit">Débitos</SelectItem>
+              <SelectItem value="credit">Créditos</SelectItem>
+              <SelectItem value="all">Todos</SelectItem>
+            </SelectContent>
+          </Select>
           <Select value={showFilter} onValueChange={(v) => setShowFilter(v as any)}>
             <SelectTrigger className="w-36"><SelectValue /></SelectTrigger>
             <SelectContent>
@@ -191,7 +202,7 @@ export const ReconciliationPanel = () => {
                 <TableHead>Descrição</TableHead>
                 <TableHead className="text-right">Valor</TableHead>
                 <TableHead>Status</TableHead>
-                {!hasFinanceViewOnly && <TableHead className="w-10" />}
+                {!hasFinanceViewOnly && <TableHead className="w-20" />}
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -218,22 +229,33 @@ export const ReconciliationPanel = () => {
                     </TableCell>
                     <TableCell>
                       {t.conciliated ? (
-                        <Badge variant="default" className="gap-1"><CheckCircle2 className="w-3 h-3" /> Conciliado</Badge>
+                        t.conciliated_with_type === "ignored" ? (
+                          <Badge variant="secondary" className="gap-1"><EyeOff className="w-3 h-3" /> Ignorado</Badge>
+                        ) : (
+                          <Badge variant="default" className="gap-1"><CheckCircle2 className="w-3 h-3" /> Conciliado</Badge>
+                        )
                       ) : (
                         <Badge variant="outline" className="gap-1"><Circle className="w-3 h-3" /> Pendente</Badge>
                       )}
                     </TableCell>
                     {!hasFinanceViewOnly && (
                       <TableCell>
-                        {t.conciliated ? (
-                          <Button variant="ghost" size="icon" title="Desfazer conciliação" onClick={() => unconciliate(t.id)}>
-                            <Unlink className="w-4 h-4" />
-                          </Button>
-                        ) : (
-                          <Button variant="ghost" size="icon" title="Conciliar" onClick={() => setConciliateId(t.id)}>
-                            <Link2 className="w-4 h-4" />
-                          </Button>
-                        )}
+                        <div className="flex gap-1">
+                          {t.conciliated ? (
+                            <Button variant="ghost" size="icon" title="Desfazer conciliação" onClick={() => unconciliate(t.id)}>
+                              <Unlink className="w-4 h-4" />
+                            </Button>
+                          ) : (
+                            <>
+                              <Button variant="ghost" size="icon" title="Conciliar" onClick={() => setConciliateId(t.id)}>
+                                <Link2 className="w-4 h-4" />
+                              </Button>
+                              <Button variant="ghost" size="icon" title="Ignorar" onClick={() => markAsIgnored(t.id)}>
+                                <EyeOff className="w-4 h-4 text-muted-foreground" />
+                              </Button>
+                            </>
+                          )}
+                        </div>
                       </TableCell>
                     )}
                   </TableRow>
@@ -266,8 +288,8 @@ export const ReconciliationPanel = () => {
           transaction={transactions?.find(t => t.id === conciliateId) ?? null}
           payables={payables ?? []}
           receivables={receivables ?? []}
-          onConciliate={(withType, withId) => {
-            conciliate({ transactionId: conciliateId, withType, withId });
+          onConciliate={(withType, withId, conciliatedAmount) => {
+            conciliate({ transactionId: conciliateId, withType, withId, conciliatedAmount });
             setConciliateId(null);
           }}
         />

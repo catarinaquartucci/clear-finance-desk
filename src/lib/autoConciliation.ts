@@ -61,7 +61,8 @@ export function findMatches(
 ): MatchCandidate[] {
   const { dateWindowDays = 3, minScore = 50 } = options;
 
-  const pendingTxns = transactions.filter(t => !t.conciliated);
+  // Only match debit transactions (outflows) against payables
+  const pendingTxns = transactions.filter(t => !t.conciliated && t.type === "debit");
   const candidates: MatchCandidate[] = [];
 
   // Track already-matched counterparts to avoid duplicates
