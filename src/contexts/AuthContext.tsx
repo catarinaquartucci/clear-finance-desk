@@ -61,7 +61,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       });
       
       if (error) {
-        console.error('❌ [AuthContext] Erro ao buscar roles:', {
+        if (import.meta.env.DEV) console.error('❌ [AuthContext] Erro ao buscar roles:', {
           message: error.message,
           code: error.code,
           details: error.details,
