@@ -1,13 +1,10 @@
 import { FileBarChart } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { DREReport } from "@/components/finance/reports/DREReport";
-import { AgingReport } from "@/components/finance/reports/AgingReport";
 import { PayablesReport } from "@/components/finance/reports/PayablesReport";
 import { ReceivablesReport } from "@/components/finance/reports/ReceivablesReport";
 import { PaidReport } from "@/components/finance/reports/PaidReport";
 import { CostCenterDashboard } from "@/components/finance/reports/CostCenterDashboard";
 import { MonthlyFlowChart } from "@/components/finance/reports/MonthlyFlowChart";
-import { TopSuppliersChart } from "@/components/finance/reports/TopSuppliersChart";
 import { ExecutiveSummary } from "@/components/finance/reports/ExecutiveSummary";
 import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
 
