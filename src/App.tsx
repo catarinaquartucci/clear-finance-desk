@@ -43,7 +43,7 @@ const ContasPagar = lazy(() => import("./pages/financeiro/ContasPagar"));
 const ContasReceber = lazy(() => import("./pages/financeiro/ContasReceber"));
 const Conciliacao = lazy(() => import("./pages/financeiro/Conciliacao"));
 const Relatorios = lazy(() => import("./pages/financeiro/Relatorios"));
-const EmissaoNF = lazy(() => import("./pages/financeiro/EmissaoNF"));
+
 const BoletosPage = lazy(() => import("./pages/financeiro/Boletos"));
 
 const queryClient = new QueryClient();
