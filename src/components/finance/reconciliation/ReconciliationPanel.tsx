@@ -1,16 +1,10 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { format } from "date-fns";
-import {
-  Upload, Search, CheckCircle2, Circle, Link2, Unlink, ArrowDownCircle, ArrowUpCircle, Wand2, EyeOff
-} from "lucide-react";
+import { Upload, Wand2, Clock } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import {
-  Table, TableBody, TableCell, TableHead, TableHeader, TableRow
-} from "@/components/ui/table";
 import { useBankAccounts } from "@/hooks/useBankAccounts";
 import { useBankTransactions } from "@/hooks/useBankTransactions";
 import { usePayables } from "@/hooks/usePayables";
@@ -18,6 +12,8 @@ import { useReceivables } from "@/hooks/useReceivables";
 import { ImportStatementDialog } from "./ImportStatementDialog";
 import { ConciliateDialog } from "./ConciliateDialog";
 import { AutoConciliationDialog } from "./AutoConciliationDialog";
+import { ReconciliationCalendar } from "./ReconciliationCalendar";
+import { DayTransactionsList } from "./DayTransactionsList";
 import { useAuth } from "@/contexts/AuthContext";
 import { findMatches, type MatchCandidate } from "@/lib/autoConciliation";
 import { CompanyFilter } from "@/components/finance/CompanyFilter";
@@ -32,10 +28,8 @@ export const ReconciliationPanel = () => {
     return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
   });
   const [importOpen, setImportOpen] = useState(false);
-  const [search, setSearch] = useState("");
   const [conciliateId, setConciliateId] = useState<string | null>(null);
-  const [showFilter, setShowFilter] = useState<"all" | "pending" | "conciliated">("all");
-  const [typeFilter, setTypeFilter] = useState<"debit" | "credit" | "all">("debit");
+  const [selectedDay, setSelectedDay] = useState<number | null>(null);
   const [autoOpen, setAutoOpen] = useState(false);
   const [autoMatches, setAutoMatches] = useState<MatchCandidate[]>([]);
 
@@ -50,14 +44,24 @@ export const ReconciliationPanel = () => {
   const { payables } = usePayables("open");
   const { receivables } = useReceivables("open");
 
-  const filtered = transactions?.filter(t => {
-    const matchSearch = t.description.toLowerCase().includes(search.toLowerCase());
-    const matchStatus = showFilter === "all" ||
-      (showFilter === "pending" && !t.conciliated) ||
-      (showFilter === "conciliated" && t.conciliated);
-    const matchType = typeFilter === "all" || t.type === typeFilter;
-    return matchSearch && matchStatus && matchType;
-  }) ?? [];
+  const [parsedYear, parsedMonth] = selectedMonth.split("-").map(Number);
+
+  // Last conciliation date
+  const lastConciliationDate = useMemo(() => {
+    if (!transactions) return null;
+    const conciliated = transactions
+      .filter((t) => t.conciliated && t.conciliated_at)
+      .map((t) => new Date(t.conciliated_at!).getTime());
+    if (conciliated.length === 0) return null;
+    return new Date(Math.max(...conciliated));
+  }, [transactions]);
+
+  // Day transactions
+  const dayTransactions = useMemo(() => {
+    if (!transactions || selectedDay === null) return [];
+    const dayStr = `${parsedYear}-${String(parsedMonth).padStart(2, "0")}-${String(selectedDay).padStart(2, "0")}`;
+    return transactions.filter((t) => t.date === dayStr);
+  }, [transactions, selectedDay, parsedYear, parsedMonth]);
 
   const fmt = (v: number) =>
     new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(v);
@@ -80,7 +84,7 @@ export const ReconciliationPanel = () => {
 
   const handleConfirmAuto = (selected: MatchCandidate[]) => {
     batchConciliate(
-      selected.map(m => ({
+      selected.map((m) => ({
         transactionId: m.transactionId,
         withType: m.withType,
         withId: m.withId,
@@ -92,22 +96,22 @@ export const ReconciliationPanel = () => {
 
   return (
     <div className="space-y-4">
-      {/* Account & Month selector */}
+      {/* Toolbar */}
       <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center justify-between">
         <div className="flex gap-2 flex-wrap">
           <CompanyFilter value={companyFilter} onChange={setCompanyFilter} />
-          <Select value={selectedAccount} onValueChange={setSelectedAccount}>
+          <Select value={selectedAccount} onValueChange={(v) => { setSelectedAccount(v); setSelectedDay(null); }}>
             <SelectTrigger className="w-56"><SelectValue placeholder="Selecione a conta" /></SelectTrigger>
             <SelectContent>
-              {bankAccounts?.filter(b => b.active).map((b) => (
+              {bankAccounts?.filter((b) => b.active).map((b) => (
                 <SelectItem key={b.id} value={b.id}>{b.name} - {b.bank_name}</SelectItem>
               ))}
             </SelectContent>
           </Select>
-          <Select value={selectedMonth} onValueChange={setSelectedMonth}>
+          <Select value={selectedMonth} onValueChange={(v) => { setSelectedMonth(v); setSelectedDay(null); }}>
             <SelectTrigger className="w-40"><SelectValue /></SelectTrigger>
             <SelectContent>
-              {monthOptions.map(m => (
+              {monthOptions.map((m) => (
                 <SelectItem key={m.value} value={m.value}>{m.label}</SelectItem>
               ))}
             </SelectContent>
@@ -115,11 +119,7 @@ export const ReconciliationPanel = () => {
         </div>
         {!hasFinanceViewOnly && (
           <div className="flex gap-2">
-            <Button
-              variant="outline"
-              onClick={handleAutoConciliate}
-              disabled={!selectedAccount || stats.pending === 0}
-            >
+            <Button variant="outline" onClick={handleAutoConciliate} disabled={!selectedAccount || stats.pending === 0}>
               <Wand2 className="w-4 h-4 mr-1" /> Conciliar Automaticamente
             </Button>
             <Button onClick={() => setImportOpen(true)} disabled={!selectedAccount}>
@@ -129,140 +129,89 @@ export const ReconciliationPanel = () => {
         )}
       </div>
 
-      {/* Stats */}
+      {/* Last conciliation badge + Stats */}
       {selectedAccount && (
-        <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-          <Card>
-            <CardContent className="pt-4 pb-4">
-              <p className="text-xs text-muted-foreground">Total</p>
-              <p className="text-xl font-bold">{stats.total}</p>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="pt-4 pb-4">
-              <p className="text-xs text-muted-foreground">Conciliados</p>
-              <p className="text-xl font-bold text-emerald-500">{stats.conciliated}</p>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="pt-4 pb-4">
-              <p className="text-xs text-muted-foreground">Pendentes</p>
-              <p className="text-xl font-bold text-amber-500">{stats.pending}</p>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="pt-4 pb-4">
-              <p className="text-xs text-muted-foreground">Créditos</p>
-              <p className="text-xl font-bold text-emerald-500">{fmt(stats.totalCredits)}</p>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="pt-4 pb-4">
-              <p className="text-xs text-muted-foreground">Débitos</p>
-              <p className="text-xl font-bold text-destructive">{fmt(stats.totalDebits)}</p>
-            </CardContent>
-          </Card>
-        </div>
-      )}
+        <>
+          {lastConciliationDate && (
+            <div className="flex items-center gap-2">
+              <Badge variant="outline" className="gap-1.5 text-xs">
+                <Clock className="w-3 h-3" />
+                Última conciliação: {format(lastConciliationDate, "dd/MM/yyyy 'às' HH:mm")}
+              </Badge>
+            </div>
+          )}
 
-      {/* Toolbar */}
-      {selectedAccount && (
-        <div className="flex gap-2 items-center flex-wrap">
-          <div className="relative flex-1 max-w-xs">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-            <Input placeholder="Buscar..." value={search} onChange={(e) => setSearch(e.target.value)} className="pl-9" />
+          <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+            <Card>
+              <CardContent className="pt-4 pb-4">
+                <p className="text-xs text-muted-foreground">Total</p>
+                <p className="text-xl font-bold">{stats.total}</p>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardContent className="pt-4 pb-4">
+                <p className="text-xs text-muted-foreground">Conciliados</p>
+                <p className="text-xl font-bold text-emerald-500">{stats.conciliated}</p>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardContent className="pt-4 pb-4">
+                <p className="text-xs text-muted-foreground">Pendentes</p>
+                <p className="text-xl font-bold text-amber-500">{stats.pending}</p>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardContent className="pt-4 pb-4">
+                <p className="text-xs text-muted-foreground">Créditos</p>
+                <p className="text-xl font-bold text-emerald-500">{fmt(stats.totalCredits)}</p>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardContent className="pt-4 pb-4">
+                <p className="text-xs text-muted-foreground">Débitos</p>
+                <p className="text-xl font-bold text-destructive">{fmt(stats.totalDebits)}</p>
+              </CardContent>
+            </Card>
           </div>
-          <Select value={typeFilter} onValueChange={(v) => setTypeFilter(v as any)}>
-            <SelectTrigger className="w-32"><SelectValue /></SelectTrigger>
-            <SelectContent>
-              <SelectItem value="debit">Débitos</SelectItem>
-              <SelectItem value="credit">Créditos</SelectItem>
-              <SelectItem value="all">Todos</SelectItem>
-            </SelectContent>
-          </Select>
-          <Select value={showFilter} onValueChange={(v) => setShowFilter(v as any)}>
-            <SelectTrigger className="w-36"><SelectValue /></SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">Todos</SelectItem>
-              <SelectItem value="pending">Pendentes</SelectItem>
-              <SelectItem value="conciliated">Conciliados</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
+        </>
       )}
 
-      {/* Table */}
+      {/* Calendar + Day detail */}
       {selectedAccount ? (
-        <div className="border rounded-lg">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead className="w-8" />
-                <TableHead>Data</TableHead>
-                <TableHead>Descrição</TableHead>
-                <TableHead className="text-right">Valor</TableHead>
-                <TableHead>Status</TableHead>
-                {!hasFinanceViewOnly && <TableHead className="w-20" />}
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {isLoading ? (
-                <TableRow><TableCell colSpan={6} className="text-center py-8 text-muted-foreground">Carregando...</TableCell></TableRow>
-              ) : filtered.length === 0 ? (
-                <TableRow><TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
-                  {transactions?.length === 0 ? "Importe um extrato para começar" : "Nenhum lançamento encontrado"}
-                </TableCell></TableRow>
-              ) : (
-                filtered.map((t) => (
-                  <TableRow key={t.id} className={t.conciliated ? "opacity-60" : ""}>
-                    <TableCell>
-                      {t.type === "credit" ? (
-                        <ArrowUpCircle className="w-4 h-4 text-emerald-500" />
-                      ) : (
-                        <ArrowDownCircle className="w-4 h-4 text-destructive" />
-                      )}
-                    </TableCell>
-                    <TableCell>{format(new Date(t.date + "T12:00:00"), "dd/MM/yyyy")}</TableCell>
-                    <TableCell className="font-medium max-w-[300px] truncate">{t.description}</TableCell>
-                    <TableCell className={`text-right font-mono ${t.type === "credit" ? "text-emerald-500" : "text-destructive"}`}>
-                      {t.type === "credit" ? "+" : "-"}{fmt(Math.abs(Number(t.amount)))}
-                    </TableCell>
-                    <TableCell>
-                      {t.conciliated ? (
-                        t.conciliated_with_type === "ignored" ? (
-                          <Badge variant="secondary" className="gap-1"><EyeOff className="w-3 h-3" /> Ignorado</Badge>
-                        ) : (
-                          <Badge variant="default" className="gap-1"><CheckCircle2 className="w-3 h-3" /> Conciliado</Badge>
-                        )
-                      ) : (
-                        <Badge variant="outline" className="gap-1"><Circle className="w-3 h-3" /> Pendente</Badge>
-                      )}
-                    </TableCell>
-                    {!hasFinanceViewOnly && (
-                      <TableCell>
-                        <div className="flex gap-1">
-                          {t.conciliated ? (
-                            <Button variant="ghost" size="icon" title="Desfazer conciliação" onClick={() => unconciliate(t.id)}>
-                              <Unlink className="w-4 h-4" />
-                            </Button>
-                          ) : (
-                            <>
-                              <Button variant="ghost" size="icon" title="Conciliar" onClick={() => setConciliateId(t.id)}>
-                                <Link2 className="w-4 h-4" />
-                              </Button>
-                              <Button variant="ghost" size="icon" title="Ignorar" onClick={() => markAsIgnored(t.id)}>
-                                <EyeOff className="w-4 h-4 text-muted-foreground" />
-                              </Button>
-                            </>
-                          )}
-                        </div>
-                      </TableCell>
-                    )}
-                  </TableRow>
-                ))
+        <div className="space-y-4">
+          {isLoading ? (
+            <div className="text-center py-12 text-muted-foreground">Carregando...</div>
+          ) : transactions?.length === 0 ? (
+            <Card>
+              <CardContent className="py-12 text-center text-muted-foreground">
+                Importe um extrato para começar
+              </CardContent>
+            </Card>
+          ) : (
+            <>
+              <ReconciliationCalendar
+                year={parsedYear}
+                month={parsedMonth}
+                transactions={transactions ?? []}
+                selectedDay={selectedDay}
+                onSelectDay={setSelectedDay}
+              />
+
+              {selectedDay !== null && (
+                <DayTransactionsList
+                  day={selectedDay}
+                  month={parsedMonth}
+                  year={parsedYear}
+                  transactions={dayTransactions}
+                  allTransactions={transactions ?? []}
+                  readOnly={!!hasFinanceViewOnly}
+                  onConciliate={(id) => setConciliateId(id)}
+                  onUnconciliate={(id) => unconciliate(id)}
+                  onIgnore={(id) => markAsIgnored(id)}
+                />
               )}
-            </TableBody>
-          </Table>
+            </>
+          )}
         </div>
       ) : (
         <Card>
@@ -285,7 +234,7 @@ export const ReconciliationPanel = () => {
         <ConciliateDialog
           open={!!conciliateId}
           onOpenChange={() => setConciliateId(null)}
-          transaction={transactions?.find(t => t.id === conciliateId) ?? null}
+          transaction={transactions?.find((t) => t.id === conciliateId) ?? null}
           payables={payables ?? []}
           receivables={receivables ?? []}
           onConciliate={(withType, withId, conciliatedAmount) => {
