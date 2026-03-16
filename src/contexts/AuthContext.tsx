@@ -45,7 +45,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
   const checkUserRoles = async (userId: string) => {
     try {
-      console.log('🔍 [AuthContext] Iniciando verificação de roles para userId:', userId);
+      if (import.meta.env.DEV) console.log('🔍 [AuthContext] Iniciando verificação de roles para userId:', userId);
       
       // Query direta na tabela user_roles
       const { data, error } = await supabase
@@ -53,7 +53,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         .select("role")
         .eq("user_id", userId);
 
-      console.log('📊 [AuthContext] Resposta da query user_roles:', { 
+      if (import.meta.env.DEV) console.log('📊 [AuthContext] Resposta da query user_roles:', { 
         userId,
         data, 
         error,
@@ -61,7 +61,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       });
       
       if (error) {
-        console.error('❌ [AuthContext] Erro ao buscar roles:', {
+        if (import.meta.env.DEV) console.error('❌ [AuthContext] Erro ao buscar roles:', {
           message: error.message,
           code: error.code,
           details: error.details,
@@ -72,13 +72,13 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       }
 
       if (!data || data.length === 0) {
-        console.warn('⚠️ [AuthContext] Nenhuma role encontrada para o usuário:', userId);
+        if (import.meta.env.DEV) console.warn('⚠️ [AuthContext] Nenhuma role encontrada para o usuário:', userId);
         resetRoles();
         return;
       }
 
       const roles = data.map(r => r.role as string);
-      console.log('📋 [AuthContext] Roles do usuário:', roles);
+      if (import.meta.env.DEV) console.log('📋 [AuthContext] Roles do usuário:', roles);
       
       const adminStatus = roles.includes("admin");
       const financeStatus = roles.includes("finance");
@@ -93,7 +93,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       const editFinance = financeStatus || adminStatus;
       const editAdmin = adminStatus;
       
-      console.log('✅ [AuthContext] Status calculado:', { 
+      if (import.meta.env.DEV) console.log('✅ [AuthContext] Status calculado:', { 
         userId,
         roles,
         isAdmin: adminStatus, 
@@ -111,7 +111,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       setCanEditFinance(editFinance);
       setCanEditAdmin(editAdmin);
     } catch (error: any) {
-      console.error('❌ [AuthContext] Exceção ao verificar roles:', {
+      if (import.meta.env.DEV) console.error('❌ [AuthContext] Exceção ao verificar roles:', {
         message: error?.message,
         stack: error?.stack
       });
@@ -132,19 +132,19 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
   const refreshRoles = async () => {
     if (user?.id) {
-      console.log('🔄 [AuthContext] Refresh de roles solicitado');
+      if (import.meta.env.DEV) console.log('🔄 [AuthContext] Refresh de roles solicitado');
       setLoading(true);
       await checkUserRoles(user.id);
     }
   };
 
   useEffect(() => {
-    console.log('🚀 [AuthContext] Inicializando AuthProvider');
+    if (import.meta.env.DEV) console.log('🚀 [AuthContext] Inicializando AuthProvider');
     
     // Configurar listener PRIMEIRO
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, session) => {
-        console.log('🔄 [AuthContext] Auth state changed:', { 
+        if (import.meta.env.DEV) console.log('🔄 [AuthContext] Auth state changed:', { 
           event, 
           userId: session?.user?.id,
           email: session?.user?.email 
@@ -160,7 +160,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
             checkUserRoles(session.user.id);
           }, 0);
         } else {
-          console.log('👤 [AuthContext] Usuário deslogado, resetando estados');
+          if (import.meta.env.DEV) console.log('👤 [AuthContext] Usuário deslogado, resetando estados');
           resetRoles();
           setLoading(false);
         }
@@ -169,7 +169,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
     // DEPOIS verificar sessão existente
     supabase.auth.getSession().then(({ data: { session }, error }) => {
-      console.log('📦 [AuthContext] Sessão existente:', { 
+      if (import.meta.env.DEV) console.log('📦 [AuthContext] Sessão existente:', { 
         hasSession: !!session,
         userId: session?.user?.id,
         email: session?.user?.email,
@@ -187,13 +187,13 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     });
 
     return () => {
-      console.log('🧹 [AuthContext] Cleanup - unsubscribe');
+      if (import.meta.env.DEV) console.log('🧹 [AuthContext] Cleanup - unsubscribe');
       subscription.unsubscribe();
     };
   }, []);
 
   const signOut = async () => {
-    console.log('🚪 [AuthContext] SignOut iniciado');
+    if (import.meta.env.DEV) console.log('🚪 [AuthContext] SignOut iniciado');
     await supabase.auth.signOut();
     setUser(null);
     setSession(null);
@@ -202,7 +202,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
   // Log do estado atual para debugging
   useEffect(() => {
-    console.log('📊 [AuthContext] Estado atual:', {
+    if (import.meta.env.DEV) console.log('📊 [AuthContext] Estado atual:', {
       userId: user?.id,
       email: user?.email,
       isAdmin,
