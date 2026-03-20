@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useState } from "react";
+import { createContext, useContext, useEffect, useState, useRef } from "react";
 import { User, Session } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -42,6 +42,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [canEditFinance, setCanEditFinance] = useState(false);
   const [canEditAdmin, setCanEditAdmin] = useState(false);
   const [loading, setLoading] = useState(true);
+  const initialLoadRef = useRef(true);
 
   const checkUserRoles = async (userId: string) => {
     try {
@@ -117,6 +118,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       });
       resetRoles();
     } finally {
+      initialLoadRef.current = false;
       setLoading(false);
     }
   };
@@ -154,8 +156,9 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         setUser(session?.user ?? null);
         
         if (session?.user) {
-          setLoading(true);
-          // Usar setTimeout para evitar deadlock
+          if (initialLoadRef.current) {
+            setLoading(true);
+          }
           setTimeout(() => {
             checkUserRoles(session.user.id);
           }, 0);
