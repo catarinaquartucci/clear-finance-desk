@@ -42,6 +42,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [canEditFinance, setCanEditFinance] = useState(false);
   const [canEditAdmin, setCanEditAdmin] = useState(false);
   const [loading, setLoading] = useState(true);
+  const initialLoadRef = useRef(true);
 
   const checkUserRoles = async (userId: string) => {
     try {
