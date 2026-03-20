@@ -118,6 +118,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       });
       resetRoles();
     } finally {
+      initialLoadRef.current = false;
       setLoading(false);
     }
   };
