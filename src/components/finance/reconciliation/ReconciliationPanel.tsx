@@ -20,13 +20,19 @@ import { CompanyFilter } from "@/components/finance/CompanyFilter";
 
 export const ReconciliationPanel = () => {
   const { hasFinanceViewOnly } = useAuth();
-  const [companyFilter, setCompanyFilter] = useState("all");
+  const [companyFilter, setCompanyFilter] = useState(() => sessionStorage.getItem("reconciliation_company") || "all");
   const { data: bankAccounts } = useBankAccounts(companyFilter);
-  const [selectedAccount, setSelectedAccount] = useState<string>("");
+  const [selectedAccount, setSelectedAccount] = useState<string>(() => sessionStorage.getItem("reconciliation_account") || "");
   const [selectedMonth, setSelectedMonth] = useState(() => {
+    const saved = sessionStorage.getItem("reconciliation_month");
+    if (saved) return saved;
     const d = new Date();
     return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
   });
+
+  useEffect(() => { sessionStorage.setItem("reconciliation_company", companyFilter); }, [companyFilter]);
+  useEffect(() => { sessionStorage.setItem("reconciliation_account", selectedAccount); }, [selectedAccount]);
+  useEffect(() => { sessionStorage.setItem("reconciliation_month", selectedMonth); }, [selectedMonth]);
   const [importOpen, setImportOpen] = useState(false);
   const [conciliateId, setConciliateId] = useState<string | null>(null);
   const [selectedDay, setSelectedDay] = useState<number | null>(null);
