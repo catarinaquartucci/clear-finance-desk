@@ -23,6 +23,7 @@ import {
 import { usePayables, type Payable } from "@/hooks/usePayables";
 import { PayableForm } from "./PayableForm";
 import { PayablePayDialog } from "./PayablePayDialog";
+import { useAuth } from "@/contexts/AuthContext";
 import { useAppPreferences } from "@/contexts/AppPreferencesContext";
 
 const STATUS_CONFIG: Record<string, { label: string; variant: "default" | "secondary" | "destructive" | "outline"; icon: any }> = {

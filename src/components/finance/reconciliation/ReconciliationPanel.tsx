@@ -17,6 +17,8 @@ import { ConciliateDialog } from "./ConciliateDialog";
 import { AutoConciliationDialog } from "./AutoConciliationDialog";
 import { ReconciliationCalendar } from "./ReconciliationCalendar";
 import { DayTransactionsList } from "./DayTransactionsList";
+import { useAuth } from "@/contexts/AuthContext";
+import { findMatches, type MatchCandidate } from "@/lib/autoConciliation";
 import { useAppPreferences } from "@/contexts/AppPreferencesContext";
 
 export const ReconciliationPanel = () => {

@@ -8,7 +8,6 @@ import { CashFlowTable } from "@/components/finance/cash-flow/CashFlowTable";
 import { CashFlowDetailedTable } from "@/components/finance/cash-flow/CashFlowDetailedTable";
 import { CashFlowExportButton } from "@/components/finance/cash-flow/CashFlowExportButton";
 import { FinancialScore } from "@/components/finance/dashboard/FinancialScore";
-import { FinancialScore } from "@/components/finance/dashboard/FinancialScore";
 import { useCashFlowData } from "@/hooks/useCashFlowData";
 import { useCashFlowDataDetailed } from "@/hooks/useCashFlowDataDetailed";
 import { useAppPreferences } from "@/contexts/AppPreferencesContext";
