@@ -23,7 +23,8 @@ const formatCurrencyCompact = (v: number) =>
   }).format(v);
 
 const Index = () => {
-  const { data, isLoading } = useFinanceDashboard();
+  const { selectedCompanyId } = useAppPreferences();
+  const { data, isLoading } = useFinanceDashboard(selectedCompanyId);
   const [openDetail, setOpenDetail] = useState<DetailType | null>(null);
 
   const mesAtual = format(new Date(), "MMMM 'de' yyyy", { locale: ptBR });
