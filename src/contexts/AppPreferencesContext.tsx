@@ -254,6 +254,7 @@ export const AppPreferencesProvider = ({ children }: { children: ReactNode }) =>
     <AppPreferencesContext.Provider
       value={{
         ...state,
+        setSelectedCompanyId,
         setFinancialYear,
         setFinancialMonth,
         setAnalysisMonth,
