@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useSuppliers, Supplier, SupplierInsert } from "@/hooks/useSuppliers";
 import { useGroupCompanies } from "@/hooks/useGroupCompanies";
 import { Button } from "@/components/ui/button";
@@ -6,8 +6,10 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Pencil, Trash2, Search } from "lucide-react";
+import { Plus, Pencil, Trash2, Search, Filter, ArrowUp, ArrowDown, ArrowUpDown, X } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 import { CompanyFilter } from "@/components/finance/CompanyFilter";
 import { formatCPFCNPJ } from "@/lib/masks";
@@ -19,6 +21,97 @@ const emptyForm: SupplierInsert = {
   pix_key: "", category: "", active: true, company_id: "3d37326f-bedc-4a16-b81f-0213c826d423",
 };
 
+type SortColumn = "name" | "document" | "category" | "company_id" | "contact_email" | "active";
+type SortDir = "asc" | "desc";
+type ColumnFilters = Record<string, Set<string>>;
+
+const ColumnFilterPopover = ({
+  column,
+  values,
+  selected,
+  onToggle,
+  onSelectAll,
+  onClear,
+}: {
+  column: string;
+  values: string[];
+  selected: Set<string>;
+  onToggle: (v: string) => void;
+  onSelectAll: () => void;
+  onClear: () => void;
+}) => {
+  const [filterSearch, setFilterSearch] = useState("");
+  const filtered = values.filter(v => v.toLowerCase().includes(filterSearch.toLowerCase()));
+  const hasActive = selected.size > 0 && selected.size < values.length;
+
+  return (
+    <Popover>
+      <PopoverTrigger asChild>
+        <Button variant="ghost" size="icon" className="h-5 w-5 ml-1 p-0">
+          <Filter className={`w-3 h-3 ${selected.size > 0 ? "text-primary fill-primary" : "text-muted-foreground"}`} />
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent className="w-56 p-2" align="start">
+        <Input
+          placeholder="Buscar..."
+          value={filterSearch}
+          onChange={e => setFilterSearch(e.target.value)}
+          className="h-8 text-xs mb-2"
+        />
+        <div className="flex gap-1 mb-2">
+          <Button variant="outline" size="sm" className="h-6 text-xs flex-1" onClick={onSelectAll}>Todos</Button>
+          <Button variant="outline" size="sm" className="h-6 text-xs flex-1" onClick={onClear}>Limpar</Button>
+        </div>
+        <div className="max-h-48 overflow-y-auto space-y-1">
+          {filtered.map(v => (
+            <label key={v} className="flex items-center gap-2 px-1 py-0.5 rounded hover:bg-accent cursor-pointer text-xs">
+              <Checkbox
+                checked={selected.has(v)}
+                onCheckedChange={() => onToggle(v)}
+                className="h-3.5 w-3.5"
+              />
+              <span className="truncate">{v || "(vazio)"}</span>
+            </label>
+          ))}
+          {filtered.length === 0 && <p className="text-xs text-muted-foreground text-center py-2">Nenhum resultado</p>}
+        </div>
+      </PopoverContent>
+    </Popover>
+  );
+};
+
+const SortableHeader = ({
+  label,
+  column,
+  sortColumn,
+  sortDir,
+  onSort,
+  filterPopover,
+}: {
+  label: string;
+  column: SortColumn;
+  sortColumn: SortColumn | null;
+  sortDir: SortDir;
+  onSort: (col: SortColumn) => void;
+  filterPopover?: React.ReactNode;
+}) => {
+  const isActive = sortColumn === column;
+  const Icon = isActive ? (sortDir === "asc" ? ArrowUp : ArrowDown) : ArrowUpDown;
+
+  return (
+    <div className="flex items-center gap-0.5">
+      <button
+        className="flex items-center gap-1 hover:text-foreground transition-colors text-xs font-medium"
+        onClick={() => onSort(column)}
+      >
+        {label}
+        <Icon className={`w-3 h-3 ${isActive ? "text-primary" : "text-muted-foreground"}`} />
+      </button>
+      {filterPopover}
+    </div>
+  );
+};
+
 export const SuppliersList = () => {
   const { selectedCompanyId } = useAppPreferences();
   const { data: suppliers, isLoading, create, update, remove } = useSuppliers(selectedCompanyId);
@@ -27,6 +120,97 @@ export const SuppliersList = () => {
   const [editing, setEditing] = useState<Supplier | null>(null);
   const [form, setForm] = useState<SupplierInsert>(emptyForm);
   const [search, setSearch] = useState("");
+  const [sortColumn, setSortColumn] = useState<SortColumn | null>(null);
+  const [sortDir, setSortDir] = useState<SortDir>("asc");
+  const [columnFilters, setColumnFilters] = useState<ColumnFilters>({});
+
+  const getCompanyName = (id: string | null) => id === null ? "Ambas" : (companies.find(c => c.id === id)?.name ?? "—");
+
+  // Unique values for filterable columns
+  const uniqueValues = useMemo(() => {
+    if (!suppliers) return { category: [], company_id: [], active: [] };
+    return {
+      category: [...new Set(suppliers.map(s => s.category || ""))].sort(),
+      company_id: [...new Set(suppliers.map(s => getCompanyName(s.company_id)))].sort(),
+      active: ["Ativo", "Inativo"],
+    };
+  }, [suppliers, companies]);
+
+  const toggleFilter = (col: string, value: string) => {
+    setColumnFilters(prev => {
+      const next = { ...prev };
+      const set = new Set(next[col] || []);
+      if (set.has(value)) set.delete(value); else set.add(value);
+      if (set.size === 0) delete next[col]; else next[col] = set;
+      return next;
+    });
+  };
+
+  const selectAllFilter = (col: string, values: string[]) => {
+    setColumnFilters(prev => ({ ...prev, [col]: new Set(values) }));
+  };
+
+  const clearFilter = (col: string) => {
+    setColumnFilters(prev => {
+      const next = { ...prev };
+      delete next[col];
+      return next;
+    });
+  };
+
+  const clearAllFilters = () => setColumnFilters({});
+
+  const handleSort = (col: SortColumn) => {
+    if (sortColumn === col) {
+      setSortDir(d => d === "asc" ? "desc" : "asc");
+    } else {
+      setSortColumn(col);
+      setSortDir("asc");
+    }
+  };
+
+  const activeFilterKeys = Object.keys(columnFilters);
+
+  const filtered = useMemo(() => {
+    let list = suppliers ?? [];
+
+    // Global search
+    if (search) {
+      const q = search.toLowerCase();
+      list = list.filter(s => s.name.toLowerCase().includes(q) || s.document?.toLowerCase().includes(q));
+    }
+
+    // Column filters
+    if (columnFilters.category) {
+      list = list.filter(s => columnFilters.category.has(s.category || ""));
+    }
+    if (columnFilters.company_id) {
+      list = list.filter(s => columnFilters.company_id.has(getCompanyName(s.company_id)));
+    }
+    if (columnFilters.active) {
+      list = list.filter(s => columnFilters.active.has(s.active ? "Ativo" : "Inativo"));
+    }
+
+    // Sort
+    if (sortColumn) {
+      list = [...list].sort((a, b) => {
+        let va: string, vb: string;
+        if (sortColumn === "active") {
+          va = a.active ? "Ativo" : "Inativo";
+          vb = b.active ? "Ativo" : "Inativo";
+        } else if (sortColumn === "company_id") {
+          va = getCompanyName(a.company_id);
+          vb = getCompanyName(b.company_id);
+        } else {
+          va = (a[sortColumn] || "").toLowerCase();
+          vb = (b[sortColumn] || "").toLowerCase();
+        }
+        return sortDir === "asc" ? va.localeCompare(vb) : vb.localeCompare(va);
+      });
+    }
+
+    return list;
+  }, [suppliers, search, columnFilters, sortColumn, sortDir, companies]);
 
   const handleOpen = (supplier?: Supplier) => {
     if (supplier) {
@@ -49,12 +233,7 @@ export const SuppliersList = () => {
     }
   };
 
-  const getCompanyName = (id: string | null) => id === null ? "Ambas" : (companies.find(c => c.id === id)?.name ?? "—");
-
-  const filtered = suppliers?.filter(s =>
-    s.name.toLowerCase().includes(search.toLowerCase()) ||
-    s.document?.toLowerCase().includes(search.toLowerCase())
-  ) ?? [];
+  const filterLabels: Record<string, string> = { category: "Categoria", company_id: "Filial", active: "Status" };
 
   return (
     <div className="space-y-4">
@@ -99,6 +278,20 @@ export const SuppliersList = () => {
         </Dialog>
       </div>
 
+      {/* Active filters bar */}
+      {activeFilterKeys.length > 0 && (
+        <div className="flex items-center gap-2 flex-wrap">
+          <span className="text-xs text-muted-foreground">Filtros:</span>
+          {activeFilterKeys.map(col => (
+            <Badge key={col} variant="secondary" className="gap-1 text-xs">
+              {filterLabels[col] || col}: {columnFilters[col].size} selecionado(s)
+              <button onClick={() => clearFilter(col)}><X className="w-3 h-3" /></button>
+            </Badge>
+          ))}
+          <Button variant="ghost" size="sm" className="h-6 text-xs" onClick={clearAllFilters}>Limpar todos</Button>
+        </div>
+      )}
+
       {isLoading ? (
         <p className="text-muted-foreground text-sm">Carregando...</p>
       ) : (
@@ -106,12 +299,57 @@ export const SuppliersList = () => {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Nome</TableHead>
-                <TableHead>CNPJ/CPF</TableHead>
-                <TableHead>Categoria</TableHead>
-                <TableHead>Filial</TableHead>
-                <TableHead>Email</TableHead>
-                <TableHead>Status</TableHead>
+                <TableHead>
+                  <SortableHeader label="Nome" column="name" sortColumn={sortColumn} sortDir={sortDir} onSort={handleSort} />
+                </TableHead>
+                <TableHead>
+                  <SortableHeader label="CNPJ/CPF" column="document" sortColumn={sortColumn} sortDir={sortDir} onSort={handleSort} />
+                </TableHead>
+                <TableHead>
+                  <SortableHeader label="Categoria" column="category" sortColumn={sortColumn} sortDir={sortDir} onSort={handleSort}
+                    filterPopover={
+                      <ColumnFilterPopover
+                        column="category"
+                        values={uniqueValues.category}
+                        selected={columnFilters.category || new Set()}
+                        onToggle={v => toggleFilter("category", v)}
+                        onSelectAll={() => selectAllFilter("category", uniqueValues.category)}
+                        onClear={() => clearFilter("category")}
+                      />
+                    }
+                  />
+                </TableHead>
+                <TableHead>
+                  <SortableHeader label="Filial" column="company_id" sortColumn={sortColumn} sortDir={sortDir} onSort={handleSort}
+                    filterPopover={
+                      <ColumnFilterPopover
+                        column="company_id"
+                        values={uniqueValues.company_id}
+                        selected={columnFilters.company_id || new Set()}
+                        onToggle={v => toggleFilter("company_id", v)}
+                        onSelectAll={() => selectAllFilter("company_id", uniqueValues.company_id)}
+                        onClear={() => clearFilter("company_id")}
+                      />
+                    }
+                  />
+                </TableHead>
+                <TableHead>
+                  <SortableHeader label="Email" column="contact_email" sortColumn={sortColumn} sortDir={sortDir} onSort={handleSort} />
+                </TableHead>
+                <TableHead>
+                  <SortableHeader label="Status" column="active" sortColumn={sortColumn} sortDir={sortDir} onSort={handleSort}
+                    filterPopover={
+                      <ColumnFilterPopover
+                        column="active"
+                        values={uniqueValues.active}
+                        selected={columnFilters.active || new Set()}
+                        onToggle={v => toggleFilter("active", v)}
+                        onSelectAll={() => selectAllFilter("active", uniqueValues.active)}
+                        onClear={() => clearFilter("active")}
+                      />
+                    }
+                  />
+                </TableHead>
                 <TableHead className="w-[100px]">Ações</TableHead>
               </TableRow>
             </TableHeader>
