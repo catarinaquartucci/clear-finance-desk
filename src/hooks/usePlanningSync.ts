@@ -5,6 +5,14 @@ import { format, startOfMonth, endOfMonth, parseISO } from "date-fns";
 
 const VANTARI_ID = "3d37326f-bedc-4a16-b81f-0213c826d423";
 
+// Helper to apply optional company_id filter
+const applyCompanyFilter = (query: any, companyId: string, column = "company_id") => {
+  if (companyId && companyId !== "all") {
+    return query.eq(column, companyId);
+  }
+  return query;
+};
+
 interface MonthlyAggregation {
   month: string;
   expense: number;        // payables paid
@@ -12,7 +20,7 @@ interface MonthlyAggregation {
   revenue: number;         // bank credits (aportes)
 }
 
-export const usePlanningSync = () => {
+export const usePlanningSync = (companyId: string = "all") => {
   const [isSyncing, setIsSyncing] = useState(false);
 
   const syncPlanningData = async (
@@ -20,19 +28,22 @@ export const usePlanningSync = () => {
   ) => {
     setIsSyncing(true);
     try {
-      // 1. Fetch all payables for Vantari
-      const { data: payables, error: payErr } = await supabase
+      const effectiveId = companyId || "all";
+      // 1. Fetch payables
+      let payQuery = supabase
         .from("payables")
-        .select("amount, due_date, status, company_id")
-        .eq("company_id", VANTARI_ID);
+        .select("amount, due_date, status, company_id");
+      payQuery = applyCompanyFilter(payQuery, effectiveId);
+      const { data: payables, error: payErr } = await payQuery;
 
       if (payErr) throw payErr;
 
-      // 2. Fetch all credit bank transactions (aportes) - excluding SALDO and RENDIMENTOS
-      const { data: bankAccounts } = await supabase
+      // 2. Fetch credit bank transactions (aportes) - excluding SALDO and RENDIMENTOS
+      let bankQuery = supabase
         .from("bank_accounts")
-        .select("id")
-        .eq("company_id", VANTARI_ID);
+        .select("id");
+      bankQuery = applyCompanyFilter(bankQuery, effectiveId);
+      const { data: bankAccounts } = await bankQuery;
 
       const accountIds = (bankAccounts || []).map(a => a.id);
 
