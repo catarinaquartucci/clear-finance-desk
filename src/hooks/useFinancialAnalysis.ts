@@ -95,7 +95,8 @@ interface ScenarioProjection {
 export const useFinancialAnalysis = (
   planningData: MonthlyPlanning[] | undefined,
   targets: MonthlyTarget[] | undefined,
-  selectedYear: number = new Date().getFullYear()
+  selectedYear: number = new Date().getFullYear(),
+  companyId: string = "all"
 ) => {
   // Helper: Get total revenue for a month
   const getMonthRevenue = (data: MonthlyPlanning | undefined) => {
@@ -286,19 +287,22 @@ export const useFinancialAnalysis = (
   }, [planningData, selectedYear]);
 
   // Expense composition from payables grouped by notes (tipo de despesa)
-  const VANTARI_ID = "3d37326f-bedc-4a16-b81f-0213c826d423";
+  const effectiveCompanyId = companyId || "all";
   
   const { data: payablesByType } = useQuery({
-    queryKey: ["payables-by-type", selectedYear],
+    queryKey: ["payables-by-type", selectedYear, effectiveCompanyId],
     queryFn: async () => {
       const yearStart = `${selectedYear}-01-01`;
       const yearEnd = `${selectedYear}-12-31`;
-      const { data, error } = await supabase
+      let query = supabase
         .from("payables")
         .select("amount, notes")
-        .eq("company_id", VANTARI_ID)
         .gte("due_date", yearStart)
         .lte("due_date", yearEnd);
+      if (effectiveCompanyId !== "all") {
+        query = query.eq("company_id", effectiveCompanyId);
+      }
+      const { data, error } = await query;
       if (error) throw error;
       return data;
     },
