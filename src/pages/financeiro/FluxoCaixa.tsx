@@ -47,8 +47,8 @@ const FluxoCaixa = () => {
 
     let curRevenue = 0, curExpense = 0, prevRevenue = 0, prevExpense = 0;
     rows.forEach((row) => {
-      const curData = row.data[currentMonthStr];
-      const prevData = row.data[prevMonthStr];
+      const curData = row.values[currentMonthStr];
+      const prevData = row.values[prevMonthStr];
       if (row.type === "revenue") {
         curRevenue += curData?.realized ?? 0;
         prevRevenue += prevData?.realized ?? 0;
