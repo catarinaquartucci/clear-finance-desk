@@ -37,8 +37,8 @@ const AnaliseFinanceira = () => {
     setAnalysisYear: setSelectedYear,
     analysisComparisonType: comparisonType,
     setAnalysisComparisonType: setComparisonType,
+    selectedCompanyId,
   } = useAppPreferences();
-  const { selectedCompanyId } = useAppPreferences();
 
   const { planningData, isLoading: planningLoading } = useMonthlyPlanning();
   const { targets, getTargetByMonth } = useMonthlyTargets();
