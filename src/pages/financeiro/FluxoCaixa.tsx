@@ -110,13 +110,6 @@ const FluxoCaixa = () => {
             previousExpense={scoreData.prevExpense}
           />
         </div>
-              rows={rows}
-              months={months}
-              year={year}
-              statusFilter={statusFilter}
-            />
-          </div>
-        </div>
 
         {/* Filters */}
         <Card>
