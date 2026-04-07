@@ -46,7 +46,7 @@ const Planejamento = () => {
   } = useAppPreferences();
   const [insightsOpen, setInsightsOpen] = useState(false);
   const { planningData, isLoading, upsertPlanning, upsertPlanningBatch } = useMonthlyPlanning();
-  const { syncPlanningData, isSyncing } = usePlanningSync();
+  const { syncPlanningData, isSyncing } = usePlanningSync(selectedCompanyId);
   const { 
     hublaFeePercentage, 
     updateHublaFee, 
