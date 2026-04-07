@@ -11,6 +11,7 @@ import { Plus, Pencil, Trash2, Search } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 import { CompanyFilter } from "@/components/finance/CompanyFilter";
 import { formatCPFCNPJ } from "@/lib/masks";
+import { useAppPreferences } from "@/contexts/AppPreferencesContext";
 
 const emptyForm: CustomerInsert = {
   name: "", document: "", contact_email: "", contact_phone: "",
@@ -18,8 +19,8 @@ const emptyForm: CustomerInsert = {
 };
 
 export const CustomersList = () => {
-  const [companyFilter, setCompanyFilter] = useState("all");
-  const { data: customers, isLoading, create, update, remove } = useCustomers(companyFilter);
+  const { selectedCompanyId } = useAppPreferences();
+  const { data: customers, isLoading, create, update, remove } = useCustomers(selectedCompanyId);
   const { companies } = useGroupCompanies();
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState<Customer | null>(null);
@@ -62,7 +63,6 @@ export const CustomersList = () => {
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
             <Input placeholder="Buscar cliente..." value={search} onChange={e => setSearch(e.target.value)} className="pl-9" />
           </div>
-          <CompanyFilter value={companyFilter} onChange={setCompanyFilter} />
         </div>
         <Dialog open={open} onOpenChange={setOpen}>
           <DialogTrigger asChild>

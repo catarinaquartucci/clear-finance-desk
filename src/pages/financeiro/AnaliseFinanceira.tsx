@@ -37,6 +37,7 @@ const AnaliseFinanceira = () => {
     setAnalysisYear: setSelectedYear,
     analysisComparisonType: comparisonType,
     setAnalysisComparisonType: setComparisonType,
+    selectedCompanyId,
   } = useAppPreferences();
 
   const { planningData, isLoading: planningLoading } = useMonthlyPlanning();
@@ -51,7 +52,7 @@ const AnaliseFinanceira = () => {
     scenarioProjections,
     comparePeriods,
     calculateBreakeven,
-  } = useFinancialAnalysis(planningData, targets, selectedYear);
+  } = useFinancialAnalysis(planningData, targets, selectedYear, selectedCompanyId);
 
   // Year options
   const yearOptions = useMemo(() => {

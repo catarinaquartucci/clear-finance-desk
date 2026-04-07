@@ -26,6 +26,9 @@ interface ApprovalFilters {
 }
 
 interface AppPreferencesState {
+  // Seletor global de filial
+  selectedCompanyId: string;
+  
   // Módulo Financeiro
   financialYear: string;
   financialMonth: string;
@@ -51,6 +54,7 @@ interface AppPreferencesState {
 }
 
 interface AppPreferencesContextType extends AppPreferencesState {
+  setSelectedCompanyId: (id: string) => void;
   setFinancialYear: (year: string) => void;
   setFinancialMonth: (month: string) => void;
   setAnalysisMonth: (month: string) => void;
@@ -92,6 +96,7 @@ const defaultApprovalFilters: ApprovalFilters = {
 const getDefaultState = (): AppPreferencesState => {
   const currentDate = new Date();
   return {
+    selectedCompanyId: "all",
     financialYear: currentDate.getFullYear().toString(),
     financialMonth: "all",
     analysisMonth: format(currentDate, 'yyyy-MM-01'),
@@ -154,6 +159,10 @@ export const AppPreferencesProvider = ({ children }: { children: ReactNode }) =>
   useEffect(() => {
     saveToStorage(state);
   }, [state]);
+
+  const setSelectedCompanyId = useCallback((id: string) => {
+    setState(prev => ({ ...prev, selectedCompanyId: id }));
+  }, []);
 
   const setFinancialYear = useCallback((year: string) => {
     setState(prev => ({ ...prev, financialYear: year }));
@@ -245,6 +254,7 @@ export const AppPreferencesProvider = ({ children }: { children: ReactNode }) =>
     <AppPreferencesContext.Provider
       value={{
         ...state,
+        setSelectedCompanyId,
         setFinancialYear,
         setFinancialMonth,
         setAnalysisMonth,

@@ -11,6 +11,7 @@ import { Plus, Pencil, Trash2, Search } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 import { CompanyFilter } from "@/components/finance/CompanyFilter";
 import { formatCPFCNPJ } from "@/lib/masks";
+import { useAppPreferences } from "@/contexts/AppPreferencesContext";
 
 const emptyForm: SupplierInsert = {
   name: "", document: "", contact_email: "", contact_phone: "",
@@ -19,8 +20,8 @@ const emptyForm: SupplierInsert = {
 };
 
 export const SuppliersList = () => {
-  const [companyFilter, setCompanyFilter] = useState("all");
-  const { data: suppliers, isLoading, create, update, remove } = useSuppliers(companyFilter);
+  const { selectedCompanyId } = useAppPreferences();
+  const { data: suppliers, isLoading, create, update, remove } = useSuppliers(selectedCompanyId);
   const { companies } = useGroupCompanies();
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState<Supplier | null>(null);
@@ -63,7 +64,6 @@ export const SuppliersList = () => {
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
             <Input placeholder="Buscar fornecedor..." value={search} onChange={e => setSearch(e.target.value)} className="pl-9" />
           </div>
-          <CompanyFilter value={companyFilter} onChange={setCompanyFilter} />
         </div>
         <Dialog open={open} onOpenChange={setOpen}>
           <DialogTrigger asChild>

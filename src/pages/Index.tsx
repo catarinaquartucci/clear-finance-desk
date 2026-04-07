@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useAppPreferences } from "@/contexts/AppPreferencesContext";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -23,7 +24,8 @@ const formatCurrencyCompact = (v: number) =>
   }).format(v);
 
 const Index = () => {
-  const { data, isLoading } = useFinanceDashboard();
+  const { selectedCompanyId } = useAppPreferences();
+  const { data, isLoading } = useFinanceDashboard(selectedCompanyId);
   const [openDetail, setOpenDetail] = useState<DetailType | null>(null);
 
   const mesAtual = format(new Date(), "MMMM 'de' yyyy", { locale: ptBR });

@@ -11,6 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Plus, Pencil, Trash2 } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 import { CompanyFilter } from "@/components/finance/CompanyFilter";
+import { useAppPreferences } from "@/contexts/AppPreferencesContext";
 
 const emptyForm: BankAccountInsert = {
   name: "", bank_name: "", agency: "", account_number: "",
@@ -21,8 +22,8 @@ const formatCurrency = (v: number) =>
   new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(v);
 
 export const BankAccountsList = () => {
-  const [companyFilter, setCompanyFilter] = useState("all");
-  const { data: accounts, isLoading, create, update, remove } = useBankAccounts(companyFilter);
+  const { selectedCompanyId } = useAppPreferences();
+  const { data: accounts, isLoading, create, update, remove } = useBankAccounts(selectedCompanyId);
   const { companies } = useGroupCompanies();
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState<BankAccount | null>(null);
@@ -53,8 +54,7 @@ export const BankAccountsList = () => {
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between gap-4 flex-wrap">
-        <CompanyFilter value={companyFilter} onChange={setCompanyFilter} />
+      <div className="flex items-center justify-end gap-4 flex-wrap">
         <Dialog open={open} onOpenChange={setOpen}>
           <DialogTrigger asChild>
             <Button onClick={() => handleOpen()}><Plus className="w-4 h-4 mr-2" />Nova Conta</Button>

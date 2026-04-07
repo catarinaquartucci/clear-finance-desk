@@ -24,7 +24,7 @@ import { usePayables, type Payable } from "@/hooks/usePayables";
 import { PayableForm } from "./PayableForm";
 import { PayablePayDialog } from "./PayablePayDialog";
 import { useAuth } from "@/contexts/AuthContext";
-import { CompanyFilter } from "@/components/finance/CompanyFilter";
+import { useAppPreferences } from "@/contexts/AppPreferencesContext";
 
 const STATUS_CONFIG: Record<string, { label: string; variant: "default" | "secondary" | "destructive" | "outline"; icon: any }> = {
   open: { label: "Aberto", variant: "outline", icon: Clock },
@@ -35,8 +35,8 @@ const STATUS_CONFIG: Record<string, { label: string; variant: "default" | "secon
 
 export const PayablesList = () => {
   const { hasFinanceViewOnly } = useAuth();
+  const { selectedCompanyId } = useAppPreferences();
   const [statusFilter, setStatusFilter] = useState("all");
-  const [companyFilter, setCompanyFilter] = useState("all");
   const [search, setSearch] = useState("");
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
@@ -47,7 +47,7 @@ export const PayablesList = () => {
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
 
-  const { payables, isLoading, stats, createPayable, updatePayable, deletePayable, markAsPaid, markAsPaidBatch, isBatchPaying } = usePayables(statusFilter, companyFilter);
+  const { payables, isLoading, stats, createPayable, updatePayable, deletePayable, markAsPaid, markAsPaidBatch, isBatchPaying } = usePayables(statusFilter, selectedCompanyId);
 
   const today = new Date().toISOString().split("T")[0];
 
@@ -132,7 +132,6 @@ export const PayablesList = () => {
                 <SelectItem value="cancelled">Cancelados</SelectItem>
               </SelectContent>
             </Select>
-            <CompanyFilter value={companyFilter} onChange={setCompanyFilter} />
           </div>
           <div className="flex gap-2">
             {selectedIds.size > 0 && !hasFinanceViewOnly && (

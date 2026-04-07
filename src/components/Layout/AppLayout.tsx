@@ -3,14 +3,24 @@ import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "./AppSidebar";
 import { useAuth } from "@/contexts/AuthContext";
 import { useNavigate } from "react-router-dom";
-import { LogOut, User, Eye, LogIn } from "lucide-react";
+import { LogOut, User, Eye, LogIn, Building2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { NotificationsDropdown } from "./NotificationsDropdown";
+import { useGroupCompanies } from "@/hooks/useGroupCompanies";
+import { useAppPreferences } from "@/contexts/AppPreferencesContext";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 export const AppLayout = () => {
   const { user, isAdmin, hasFinanceViewOnly, hasAdminViewOnly, signOut } = useAuth();
   const isViewOnlyMode = hasFinanceViewOnly || hasAdminViewOnly;
   const navigate = useNavigate();
+  const { companies } = useGroupCompanies();
+  const { selectedCompanyId, setSelectedCompanyId } = useAppPreferences();
+
+  const activeCompanies = companies.filter((c) => c.active);
+  const selectedName = selectedCompanyId === "all"
+    ? "Todas as filiais"
+    : activeCompanies.find((c) => c.id === selectedCompanyId)?.name || "Todas as filiais";
 
   const handleSignOut = async () => {
     await signOut();
@@ -26,6 +36,24 @@ export const AppLayout = () => {
           {/* Header */}
           <header className="border-b border-border/50 bg-card/80 shadow-card sticky top-0 z-50 backdrop-blur-md h-14 flex items-center px-4 gap-4">
             <SidebarTrigger />
+
+            {/* Company Switcher */}
+            {user && activeCompanies.length > 0 && (
+              <Select value={selectedCompanyId} onValueChange={setSelectedCompanyId}>
+                <SelectTrigger className="w-auto max-w-[200px] gap-2 border-border/50">
+                  <Building2 className="w-4 h-4 text-muted-foreground shrink-0" />
+                  <SelectValue>{selectedName}</SelectValue>
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Todas as filiais</SelectItem>
+                  {activeCompanies.map((c) => (
+                    <SelectItem key={c.id} value={c.id}>
+                      {c.name}{c.type === "matriz" ? " (Sede)" : ""}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            )}
 
             <div className="flex-1" />
 
