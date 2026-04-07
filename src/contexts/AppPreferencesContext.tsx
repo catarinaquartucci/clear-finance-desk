@@ -160,6 +160,10 @@ export const AppPreferencesProvider = ({ children }: { children: ReactNode }) =>
     saveToStorage(state);
   }, [state]);
 
+  const setSelectedCompanyId = useCallback((id: string) => {
+    setState(prev => ({ ...prev, selectedCompanyId: id }));
+  }, []);
+
   const setFinancialYear = useCallback((year: string) => {
     setState(prev => ({ ...prev, financialYear: year }));
   }, []);
