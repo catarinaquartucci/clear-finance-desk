@@ -1,80 +1,43 @@
 
 
-# Seletor Global de Filial — Plano de Implementação
+# Filtros Estilo Excel para Fornecedores
 
-## Resumo
+## O que será feito
 
-Criar um seletor de empresa no header (canto superior direito) que funciona como filtro global. Ao selecionar uma filial, **todas** as telas financeiras mostram apenas dados daquela empresa. Isso substitui os filtros locais `companyFilter` espalhados em cada componente.
+Adicionar filtros por coluna no cabeçalho da tabela de fornecedores, similar ao filtro do Excel. Cada coluna terá um ícone de funil clicável que abre um popover com as opções únicas daquela coluna (checkboxes), permitindo selecionar múltiplos valores. Também será adicionada ordenação por coluna (clique no título para alternar asc/desc).
 
-## Arquitetura
+## Como funciona para o usuário
 
-```text
-AppPreferencesContext
-  └── selectedCompanyId: string  ("all" | uuid da empresa)
-  └── setSelectedCompanyId(id)
+- Cada cabeçalho de coluna ganha um ícone de **funil** (Filter) ao lado do nome
+- Ao clicar, abre um **popover** com:
+  - Campo de busca para filtrar opções
+  - Lista de checkboxes com todos os valores únicos daquela coluna
+  - Botões "Selecionar Todos" e "Limpar"
+- Clicar no **nome** da coluna ordena asc/desc (indicador visual com seta)
+- Filtros ativos mostram o ícone de funil **preenchido/colorido**
+- Badge no topo mostrando filtros ativos com botão "Limpar todos"
+- Filtro de **Status** (Ativo/Inativo) como toggle rápido
 
-AppLayout header
-  └── CompanySwitcher (canto superior direito, antes do user info)
+## Mudanças técnicas
 
-Hooks financeiros
-  └── Leem selectedCompanyId do contexto ao invés de receber prop ou usar VANTARI_ID hardcoded
-```
+### Arquivo: `src/components/finance/cadastros/SuppliersList.tsx`
 
-## Mudanças
+- Adicionar states: `sortColumn`, `sortDirection`, `columnFilters` (Record de coluna para Set de valores selecionados)
+- Criar componente inline `ColumnFilterPopover` que recebe os valores únicos de uma coluna e renderiza popover com checkboxes
+- Modificar `<TableHead>` para incluir botão de sort + botão de filtro
+- Encadear a lógica de filtragem: busca textual global > filtros por coluna > ordenação
+- Adicionar barra de filtros ativos acima da tabela com badges removíveis
 
-### 1. Adicionar `selectedCompanyId` ao AppPreferencesContext
+### Colunas filtráveis
+| Coluna | Tipo de filtro |
+|---|---|
+| Nome | Texto (busca global já existente) |
+| Categoria | Multi-select (checkboxes) |
+| Filial | Multi-select (checkboxes) |
+| Status | Multi-select (Ativo/Inativo) |
 
-**Arquivo:** `src/contexts/AppPreferencesContext.tsx`
-- Adicionar campo `selectedCompanyId: string` (default: `"all"`) ao state
-- Adicionar setter `setSelectedCompanyId`
-- Persistido no localStorage como os demais
+### Colunas ordenáveis
+Todas: Nome, CNPJ/CPF, Categoria, Filial, Email, Status
 
-### 2. Criar CompanySwitcher no Header
-
-**Arquivo:** `src/components/Layout/AppLayout.tsx`
-- Inserir um seletor de empresa (dropdown com ícone `Building2`) entre o `SidebarTrigger` e o user info
-- Usa `useGroupCompanies()` para listar empresas ativas
-- Opção "Todas as filiais" + cada empresa cadastrada
-- Mostra nome curto da empresa selecionada
-
-### 3. Remover filtros locais de empresa de 8 componentes
-
-Cada um desses arquivos tem `useState("all")` para `companyFilter` local + um `<CompanyFilter>` na UI. Substituir por leitura do contexto global:
-
-- `ReconciliationPanel.tsx` — remover state + CompanyFilter local
-- `PayablesList.tsx` — idem
-- `ReceivablesList.tsx` — idem
-- `BankAccountsList.tsx` — idem
-- `SuppliersList.tsx` — idem
-- `CustomersList.tsx` — idem
-- `CostCentersList.tsx` — idem
-- `FluxoCaixa.tsx` — idem
-
-Em cada arquivo: `const { selectedCompanyId } = useAppPreferences()` substitui o state local.
-
-### 4. Substituir VANTARI_ID hardcoded
-
-3 hooks usam `VANTARI_ID` hardcoded para filtrar dados:
-
-- `useFinanceDashboard.ts` — receber `companyId` como parâmetro, filtrar por ele (quando não for "all", aplicar `.eq("company_id", id)`)
-- `useFinancialAnalysis.ts` — idem
-- `usePlanningSync.ts` — idem
-
-Os componentes que chamam esses hooks passarão `selectedCompanyId` do contexto.
-
-### 5. Relatórios
-
-**Arquivo:** `src/components/finance/reports/ReportFilters.tsx`
-- Inicializar o filtro de empresa dos relatórios com o valor do contexto global (ao invés de "all")
-- Manter a possibilidade de override local para relatórios específicos
-
-## O que NÃO muda
-
-- Estrutura do banco de dados (nenhuma migration)
-- RLS policies (já filtram por `company_id`)
-- Módulo admin (colaboradores, equipamentos) — não tem `company_id`
-
-## Resultado
-
-O usuário seleciona a filial uma vez no canto superior direito e todas as telas financeiras refletem automaticamente essa seleção, sem precisar trocar filtro em cada página.
+Nenhuma alteração de backend necessária.
 
