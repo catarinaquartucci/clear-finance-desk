@@ -26,6 +26,9 @@ interface ApprovalFilters {
 }
 
 interface AppPreferencesState {
+  // Seletor global de filial
+  selectedCompanyId: string;
+  
   // Módulo Financeiro
   financialYear: string;
   financialMonth: string;
