@@ -18,6 +18,9 @@ import {
   Award,
   PieChart,
   FileBarChart,
+  Bot,
+  FlaskConical,
+  ScanLine,
   CheckCircle,
   Users,
   Monitor,
@@ -58,6 +61,12 @@ const analiseItems = [
   { icon: Award, label: "Bônus", path: "/financeiro/bonus" },
   { icon: PieChart, label: "Distribuição", path: "/financeiro/distribuicao" },
   { icon: FileBarChart, label: "Relatórios", path: "/financeiro/relatorios" },
+];
+
+const iaItems = [
+  { icon: Bot, label: "CFO Digital", path: "/financeiro/cfo-digital" },
+  { icon: FlaskConical, label: "Simulador", path: "/financeiro/simulador" },
+  { icon: ScanLine, label: "Scanner OCR", path: "/financeiro/scanner" },
 ];
 
 const adminItems = [
@@ -137,6 +146,7 @@ export const AppSidebar = () => {
         {renderGroup("Operacional", operacionalItems)}
         {renderGroup("Planejamento", planejamentoItems)}
         {renderGroup("Análise", analiseItems)}
+        {renderGroup("IA & Automação", iaItems)}
         {showAdmin && renderGroup("Admin", adminItems)}
       </SidebarContent>
     </Sidebar>

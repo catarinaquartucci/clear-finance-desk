@@ -8,6 +8,7 @@ import { CashFlowTable } from "@/components/finance/cash-flow/CashFlowTable";
 import { CashFlowDetailedTable } from "@/components/finance/cash-flow/CashFlowDetailedTable";
 import { CashFlowExportButton } from "@/components/finance/cash-flow/CashFlowExportButton";
 import { CompanyFilter } from "@/components/finance/CompanyFilter";
+import { FinancialScore } from "@/components/finance/dashboard/FinancialScore";
 import { useCashFlowData } from "@/hooks/useCashFlowData";
 import { useCashFlowDataDetailed } from "@/hooks/useCashFlowDataDetailed";
 import { useAppPreferences } from "@/contexts/AppPreferencesContext";
@@ -37,6 +38,27 @@ const FluxoCaixa = () => {
     isLoading: isLoadingDetailed 
   } = useCashFlowDataDetailed(year);
 
+  // Calculate score from cash flow rows
+  const scoreData = (() => {
+    const currentMonthStr = `${year}-${String(new Date().getMonth() + 1).padStart(2, "0")}`;
+    const prevMonthNum = new Date().getMonth() === 0 ? 12 : new Date().getMonth();
+    const prevYear = new Date().getMonth() === 0 ? year - 1 : year;
+    const prevMonthStr = `${prevYear}-${String(prevMonthNum).padStart(2, "0")}`;
+
+    let curRevenue = 0, curExpense = 0, prevRevenue = 0, prevExpense = 0;
+    rows.forEach((row) => {
+      const curData = row.values[currentMonthStr];
+      const prevData = row.values[prevMonthStr];
+      if (row.type === "revenue") {
+        curRevenue += curData?.realized ?? 0;
+        prevRevenue += prevData?.realized ?? 0;
+      } else if (row.type === "expense") {
+        curExpense += Math.abs(curData?.realized ?? 0);
+        prevExpense += Math.abs(prevData?.realized ?? 0);
+      }
+    });
+    return { curRevenue, curExpense, prevRevenue, prevExpense };
+  })();
   const handleCellEdit = (
     code: string,
     month: string,
@@ -77,6 +99,16 @@ const FluxoCaixa = () => {
               statusFilter={statusFilter}
             />
           </div>
+        </div>
+
+        {/* Financial Score */}
+        <div className="w-full max-w-xs">
+          <FinancialScore
+            totalRevenue={scoreData.curRevenue}
+            totalExpense={scoreData.curExpense}
+            previousRevenue={scoreData.prevRevenue}
+            previousExpense={scoreData.prevExpense}
+          />
         </div>
 
         {/* Filters */}
