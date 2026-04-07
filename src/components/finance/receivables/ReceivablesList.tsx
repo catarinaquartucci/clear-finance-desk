@@ -83,8 +83,7 @@ export const ReceivablesList = () => {
               <SelectItem value="received">Recebidos</SelectItem>
               <SelectItem value="cancelled">Cancelados</SelectItem>
             </SelectContent>
-          </Select>
-          </div>
+            </Select>
         </div>
         {!hasFinanceViewOnly && (
           <Button onClick={() => setFormOpen(true)}><Plus className="w-4 h-4 mr-1" /> Nova Conta</Button>

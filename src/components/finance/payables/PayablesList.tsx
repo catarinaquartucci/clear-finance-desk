@@ -131,7 +131,6 @@ export const PayablesList = () => {
                 <SelectItem value="cancelled">Cancelados</SelectItem>
               </SelectContent>
             </Select>
-            </div>
           </div>
           <div className="flex gap-2">
             {selectedIds.size > 0 && !hasFinanceViewOnly && (

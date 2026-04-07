@@ -54,8 +54,7 @@ export const BankAccountsList = () => {
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between gap-4 flex-wrap">
-        <div className="flex items-center justify-end gap-4 flex-wrap">
+      <div className="flex items-center justify-end gap-4 flex-wrap">
         <Dialog open={open} onOpenChange={setOpen}>
           <DialogTrigger asChild>
             <Button onClick={() => handleOpen()}><Plus className="w-4 h-4 mr-2" />Nova Conta</Button>

@@ -91,7 +91,6 @@ const FluxoCaixa = () => {
           
           <div className="flex items-center gap-4">
             <CashFlowExportButton
-            <CashFlowExportButton
               rows={rows}
               months={months}
               year={year}
