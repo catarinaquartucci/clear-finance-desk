@@ -23,7 +23,7 @@ import { useReceivables } from "@/hooks/useReceivables";
 import { ReceivableForm } from "./ReceivableForm";
 import { ReceivableReceiveDialog } from "./ReceivableReceiveDialog";
 import { useAuth } from "@/contexts/AuthContext";
-import { CompanyFilter } from "@/components/finance/CompanyFilter";
+import { useAppPreferences } from "@/contexts/AppPreferencesContext";
 
 const STATUS_CONFIG: Record<string, { label: string; variant: "default" | "secondary" | "destructive" | "outline"; icon: any }> = {
   open: { label: "Aberto", variant: "outline", icon: Clock },
@@ -34,14 +34,14 @@ const STATUS_CONFIG: Record<string, { label: string; variant: "default" | "secon
 
 export const ReceivablesList = () => {
   const { hasFinanceViewOnly } = useAuth();
+  const { selectedCompanyId } = useAppPreferences();
   const [statusFilter, setStatusFilter] = useState("all");
-  const [companyFilter, setCompanyFilter] = useState("all");
   const [search, setSearch] = useState("");
   const [formOpen, setFormOpen] = useState(false);
   const [receiveDialogId, setReceiveDialogId] = useState<string | null>(null);
   const [deleteId, setDeleteId] = useState<string | null>(null);
 
-  const { receivables, isLoading, stats, createReceivable, deleteReceivable, markAsReceived } = useReceivables(statusFilter, companyFilter);
+  const { receivables, isLoading, stats, createReceivable, deleteReceivable, markAsReceived } = useReceivables(statusFilter, selectedCompanyId);
 
   const today = new Date().toISOString().split("T")[0];
 
@@ -84,7 +84,7 @@ export const ReceivablesList = () => {
               <SelectItem value="cancelled">Cancelados</SelectItem>
             </SelectContent>
           </Select>
-          <CompanyFilter value={companyFilter} onChange={setCompanyFilter} />
+          </div>
         </div>
         {!hasFinanceViewOnly && (
           <Button onClick={() => setFormOpen(true)}><Plus className="w-4 h-4 mr-1" /> Nova Conta</Button>

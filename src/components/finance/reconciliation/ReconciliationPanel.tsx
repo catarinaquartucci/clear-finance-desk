@@ -17,14 +17,12 @@ import { ConciliateDialog } from "./ConciliateDialog";
 import { AutoConciliationDialog } from "./AutoConciliationDialog";
 import { ReconciliationCalendar } from "./ReconciliationCalendar";
 import { DayTransactionsList } from "./DayTransactionsList";
-import { useAuth } from "@/contexts/AuthContext";
-import { findMatches, type MatchCandidate } from "@/lib/autoConciliation";
-import { CompanyFilter } from "@/components/finance/CompanyFilter";
+import { useAppPreferences } from "@/contexts/AppPreferencesContext";
 
 export const ReconciliationPanel = () => {
   const { hasFinanceViewOnly } = useAuth();
-  const [companyFilter, setCompanyFilter] = useState(() => sessionStorage.getItem("reconciliation_company") || "all");
-  const { data: bankAccounts } = useBankAccounts(companyFilter);
+  const { selectedCompanyId } = useAppPreferences();
+  const { data: bankAccounts } = useBankAccounts(selectedCompanyId);
   const [selectedAccount, setSelectedAccount] = useState<string>(() => sessionStorage.getItem("reconciliation_account") || "");
   const [selectedMonth, setSelectedMonth] = useState(() => {
     const saved = sessionStorage.getItem("reconciliation_month");
@@ -43,7 +41,6 @@ export const ReconciliationPanel = () => {
     }
   }, [bankAccounts, selectedAccount]);
 
-  useEffect(() => { sessionStorage.setItem("reconciliation_company", companyFilter); }, [companyFilter]);
   useEffect(() => { sessionStorage.setItem("reconciliation_account", selectedAccount); }, [selectedAccount]);
   useEffect(() => { sessionStorage.setItem("reconciliation_month", selectedMonth); }, [selectedMonth]);
   const [importOpen, setImportOpen] = useState(false);
@@ -143,7 +140,6 @@ export const ReconciliationPanel = () => {
     <div className="space-y-4">
       {/* Row 1: Filters */}
       <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center">
-        <CompanyFilter value={companyFilter} onChange={setCompanyFilter} />
         <Select value={selectedAccount} onValueChange={(v) => { setSelectedAccount(v); setSelectedDay(null); }}>
           <SelectTrigger className="w-56"><SelectValue placeholder="Selecione a conta" /></SelectTrigger>
           <SelectContent>

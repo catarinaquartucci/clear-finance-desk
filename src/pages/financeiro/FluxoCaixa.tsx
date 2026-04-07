@@ -7,7 +7,7 @@ import { CashFlowFilters } from "@/components/finance/cash-flow/CashFlowFilters"
 import { CashFlowTable } from "@/components/finance/cash-flow/CashFlowTable";
 import { CashFlowDetailedTable } from "@/components/finance/cash-flow/CashFlowDetailedTable";
 import { CashFlowExportButton } from "@/components/finance/cash-flow/CashFlowExportButton";
-import { CompanyFilter } from "@/components/finance/CompanyFilter";
+import { FinancialScore } from "@/components/finance/dashboard/FinancialScore";
 import { FinancialScore } from "@/components/finance/dashboard/FinancialScore";
 import { useCashFlowData } from "@/hooks/useCashFlowData";
 import { useCashFlowDataDetailed } from "@/hooks/useCashFlowDataDetailed";
@@ -29,7 +29,6 @@ const FluxoCaixa = () => {
   const setYear = (y: number) => setFinancialYear(y.toString());
   
   const [activeTab, setActiveTab] = useState<string>("aggregated");
-  const [companyFilter, setCompanyFilter] = useState("all");
 
   const { rows, months, isLoading, upsertData } = useCashFlowData(year);
   const { 
@@ -91,7 +90,7 @@ const FluxoCaixa = () => {
           </div>
           
           <div className="flex items-center gap-4">
-            <CompanyFilter value={companyFilter} onChange={setCompanyFilter} />
+            <CashFlowExportButton
             <CashFlowExportButton
               rows={rows}
               months={months}

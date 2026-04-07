@@ -11,14 +11,15 @@ import { Badge } from "@/components/ui/badge";
 import { Plus, Pencil, Trash2 } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 import { CompanyFilter } from "@/components/finance/CompanyFilter";
+import { useAppPreferences } from "@/contexts/AppPreferencesContext";
 
 const emptyForm: CostCenterInsert = {
   code: "", name: "", description: "", active: true, company_id: null,
 };
 
 export const CostCentersList = () => {
-  const [companyFilter, setCompanyFilter] = useState("all");
-  const { data: centers, isLoading, create, update, remove } = useCostCenters(companyFilter);
+  const { selectedCompanyId } = useAppPreferences();
+  const { data: centers, isLoading, create, update, remove } = useCostCenters(selectedCompanyId);
   const { companies } = useGroupCompanies();
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState<CostCenter | null>(null);
@@ -50,7 +51,7 @@ export const CostCentersList = () => {
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between gap-4 flex-wrap">
-        <CompanyFilter value={companyFilter} onChange={setCompanyFilter} />
+        <div className="flex items-center justify-end gap-4 flex-wrap">
         <Dialog open={open} onOpenChange={setOpen}>
           <DialogTrigger asChild>
             <Button onClick={() => handleOpen()}><Plus className="w-4 h-4 mr-2" />Novo Centro de Custo</Button>
