@@ -1,9 +1,12 @@
 import { useState, useMemo, useEffect } from "react";
-import { format } from "date-fns";
-import { Upload, Wand2, Clock } from "lucide-react";
+import { format, subMonths, addMonths } from "date-fns";
+import { ptBR } from "date-fns/locale";
+import { Upload, Wand2, Clock, ChevronLeft, ChevronRight, FileSearch } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
+import { Progress } from "@/components/ui/progress";
+import { Separator } from "@/components/ui/separator";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useBankAccounts } from "@/hooks/useBankAccounts";
 import { useBankTransactions } from "@/hooks/useBankTransactions";
@@ -30,6 +33,16 @@ export const ReconciliationPanel = () => {
     return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
   });
 
+  // Auto-select first active account when none is selected
+  useEffect(() => {
+    if (!selectedAccount && bankAccounts && bankAccounts.length > 0) {
+      const firstActive = bankAccounts.find((b) => b.active);
+      if (firstActive) {
+        setSelectedAccount(firstActive.id);
+      }
+    }
+  }, [bankAccounts, selectedAccount]);
+
   useEffect(() => { sessionStorage.setItem("reconciliation_company", companyFilter); }, [companyFilter]);
   useEffect(() => { sessionStorage.setItem("reconciliation_account", selectedAccount); }, [selectedAccount]);
   useEffect(() => { sessionStorage.setItem("reconciliation_month", selectedMonth); }, [selectedMonth]);
@@ -52,6 +65,17 @@ export const ReconciliationPanel = () => {
 
   const [parsedYear, parsedMonth] = selectedMonth.split("-").map(Number);
 
+  // Month navigation helpers
+  const navigateMonth = (direction: "prev" | "next") => {
+    const current = new Date(parsedYear, parsedMonth - 1, 1);
+    const target = direction === "prev" ? subMonths(current, 1) : addMonths(current, 1);
+    const newVal = `${target.getFullYear()}-${String(target.getMonth() + 1).padStart(2, "0")}`;
+    setSelectedMonth(newVal);
+    setSelectedDay(null);
+  };
+
+  const currentMonthLabel = format(new Date(parsedYear, parsedMonth - 1, 1), "MMMM yyyy", { locale: ptBR });
+
   // Last conciliation date
   const lastConciliationDate = useMemo(() => {
     if (!transactions) return null;
@@ -61,6 +85,9 @@ export const ReconciliationPanel = () => {
     if (conciliated.length === 0) return null;
     return new Date(Math.max(...conciliated));
   }, [transactions]);
+
+  // Progress
+  const progressPercent = stats.total > 0 ? Math.round((stats.conciliated / stats.total) * 100) : 0;
 
   // Day transactions
   const dayTransactions = useMemo(() => {
@@ -72,14 +99,26 @@ export const ReconciliationPanel = () => {
   const fmt = (v: number) =>
     new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(v);
 
-  const monthOptions = Array.from({ length: 12 }, (_, i) => {
-    const d = new Date();
-    d.setMonth(d.getMonth() - i);
-    return {
-      value: `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`,
-      label: format(d, "MMM yyyy"),
+  // Keyboard shortcuts
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if (e.key === "ArrowLeft" && !e.ctrlKey && !e.metaKey) {
+        const active = document.activeElement;
+        if (active && (active.tagName === "INPUT" || active.tagName === "TEXTAREA" || active.tagName === "SELECT")) return;
+        navigateMonth("prev");
+      }
+      if (e.key === "ArrowRight" && !e.ctrlKey && !e.metaKey) {
+        const active = document.activeElement;
+        if (active && (active.tagName === "INPUT" || active.tagName === "TEXTAREA" || active.tagName === "SELECT")) return;
+        navigateMonth("next");
+      }
+      if (e.key === "Escape" && selectedDay !== null) {
+        setSelectedDay(null);
+      }
     };
-  });
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, [selectedDay, parsedYear, parsedMonth]);
 
   const handleAutoConciliate = () => {
     if (!transactions || !payables || !receivables) return;
@@ -102,29 +141,34 @@ export const ReconciliationPanel = () => {
 
   return (
     <div className="space-y-4">
-      {/* Toolbar */}
-      <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center justify-between">
-        <div className="flex gap-2 flex-wrap">
-          <CompanyFilter value={companyFilter} onChange={setCompanyFilter} />
-          <Select value={selectedAccount} onValueChange={(v) => { setSelectedAccount(v); setSelectedDay(null); }}>
-            <SelectTrigger className="w-56"><SelectValue placeholder="Selecione a conta" /></SelectTrigger>
-            <SelectContent>
-              {bankAccounts?.filter((b) => b.active).map((b) => (
-                <SelectItem key={b.id} value={b.id}>{b.name} - {b.bank_name}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          <Select value={selectedMonth} onValueChange={(v) => { setSelectedMonth(v); setSelectedDay(null); }}>
-            <SelectTrigger className="w-40"><SelectValue /></SelectTrigger>
-            <SelectContent>
-              {monthOptions.map((m) => (
-                <SelectItem key={m.value} value={m.value}>{m.label}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+      {/* Row 1: Filters */}
+      <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center">
+        <CompanyFilter value={companyFilter} onChange={setCompanyFilter} />
+        <Select value={selectedAccount} onValueChange={(v) => { setSelectedAccount(v); setSelectedDay(null); }}>
+          <SelectTrigger className="w-56"><SelectValue placeholder="Selecione a conta" /></SelectTrigger>
+          <SelectContent>
+            {bankAccounts?.filter((b) => b.active).map((b) => (
+              <SelectItem key={b.id} value={b.id}>{b.name} - {b.bank_name}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        {/* Month nav with arrows */}
+        <div className="flex items-center gap-1">
+          <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => navigateMonth("prev")}>
+            <ChevronLeft className="h-4 w-4" />
+          </Button>
+          <span className="text-sm font-medium capitalize min-w-[120px] text-center">{currentMonthLabel}</span>
+          <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => navigateMonth("next")}>
+            <ChevronRight className="h-4 w-4" />
+          </Button>
         </div>
-        {!hasFinanceViewOnly && (
-          <div className="flex gap-2">
+      </div>
+
+      {/* Row 2: Actions */}
+      {!hasFinanceViewOnly && selectedAccount && (
+        <>
+          <Separator />
+          <div className="flex gap-2 justify-end">
             <Button variant="outline" onClick={handleAutoConciliate} disabled={!selectedAccount || stats.pending === 0}>
               <Wand2 className="w-4 h-4 mr-1" /> Conciliar Automaticamente
             </Button>
@@ -132,19 +176,28 @@ export const ReconciliationPanel = () => {
               <Upload className="w-4 h-4 mr-1" /> Importar Extrato
             </Button>
           </div>
-        )}
-      </div>
+        </>
+      )}
 
-      {/* Last conciliation badge + Stats */}
+      {/* Last conciliation badge + Stats + Progress */}
       {selectedAccount && (
         <>
-          {lastConciliationDate && (
-            <div className="flex items-center gap-2">
+          <div className="flex items-center gap-3 flex-wrap">
+            {lastConciliationDate && (
               <Badge variant="outline" className="gap-1.5 text-xs">
                 <Clock className="w-3 h-3" />
                 Última conciliação: {format(lastConciliationDate, "dd/MM/yyyy 'às' HH:mm")}
               </Badge>
-            </div>
+            )}
+            {stats.total > 0 && (
+              <Badge variant="secondary" className="gap-1.5 text-xs">
+                {progressPercent}% conciliado ({stats.conciliated} de {stats.total})
+              </Badge>
+            )}
+          </div>
+
+          {stats.total > 0 && (
+            <Progress value={progressPercent} className="h-2" />
           )}
 
           <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
@@ -189,8 +242,21 @@ export const ReconciliationPanel = () => {
             <div className="text-center py-12 text-muted-foreground">Carregando...</div>
           ) : transactions?.length === 0 ? (
             <Card>
-              <CardContent className="py-12 text-center text-muted-foreground">
-                Importe um extrato para começar
+              <CardContent className="py-16 text-center space-y-4">
+                <div className="mx-auto w-12 h-12 rounded-full bg-muted flex items-center justify-center">
+                  <FileSearch className="w-6 h-6 text-muted-foreground" />
+                </div>
+                <div>
+                  <p className="font-medium text-foreground">Nenhuma transação encontrada</p>
+                  <p className="text-sm text-muted-foreground mt-1">
+                    Importe um extrato bancário (OFX/CSV) para iniciar a conciliação deste mês.
+                  </p>
+                </div>
+                {!hasFinanceViewOnly && (
+                  <Button onClick={() => setImportOpen(true)}>
+                    <Upload className="w-4 h-4 mr-1" /> Importar Primeiro Extrato
+                  </Button>
+                )}
               </CardContent>
             </Card>
           ) : (
@@ -221,8 +287,16 @@ export const ReconciliationPanel = () => {
         </div>
       ) : (
         <Card>
-          <CardContent className="py-12 text-center text-muted-foreground">
-            Selecione uma conta bancária para visualizar a conciliação
+          <CardContent className="py-16 text-center space-y-4">
+            <div className="mx-auto w-12 h-12 rounded-full bg-muted flex items-center justify-center">
+              <FileSearch className="w-6 h-6 text-muted-foreground" />
+            </div>
+            <div>
+              <p className="font-medium text-foreground">Selecione uma conta bancária</p>
+              <p className="text-sm text-muted-foreground mt-1">
+                Escolha uma conta acima para visualizar e conciliar as transações.
+              </p>
+            </div>
           </CardContent>
         </Card>
       )}

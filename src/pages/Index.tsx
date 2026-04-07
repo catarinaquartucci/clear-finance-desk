@@ -6,7 +6,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useFinanceDashboard } from "@/hooks/useFinanceDashboard";
 import { ExpenseBreakdownPie } from "@/components/finance/analysis/ExpenseBreakdownPie";
 import { DashboardDetailDialog, type DetailType } from "@/components/Dashboard/DashboardDetailDialog";
-import { Wallet, TrendingUp, TrendingDown, Target, AlertTriangle, ExternalLink } from "lucide-react";
+import { Wallet, TrendingUp, TrendingDown, Target, AlertTriangle, ExternalLink, Building2, Upload, Scale, ArrowRight } from "lucide-react";
 import { Link } from "react-router-dom";
 import { format, parseISO } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -28,12 +28,50 @@ const Index = () => {
 
   const mesAtual = format(new Date(), "MMMM 'de' yyyy", { locale: ptBR });
 
+  const allZero = !isLoading && data &&
+    (data.saldoAtual ?? 0) === 0 &&
+    (data.entradasMes ?? 0) === 0 &&
+    (data.saidasMes ?? 0) === 0;
+
   return (
     <div className="container mx-auto px-4 py-8 space-y-8">
       <div>
         <h1 className="text-2xl font-bold text-foreground">Painel Financeiro</h1>
         <p className="text-sm text-muted-foreground capitalize">{mesAtual}</p>
       </div>
+
+      {/* Onboarding when empty */}
+      {allZero && (
+        <Card className="border-dashed border-2 border-primary/30 bg-primary/5">
+          <CardContent className="py-8">
+            <h2 className="text-lg font-semibold text-foreground mb-1">Comece por aqui</h2>
+            <p className="text-sm text-muted-foreground mb-6">Configure seu financeiro em 3 passos simples:</p>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              <OnboardingStep
+                step={1}
+                icon={Building2}
+                title="Cadastre uma conta"
+                description="Adicione sua conta bancária"
+                href="/financeiro/cadastros"
+              />
+              <OnboardingStep
+                step={2}
+                icon={Upload}
+                title="Importe um extrato"
+                description="Envie um arquivo OFX ou CSV"
+                href="/financeiro/conciliacao"
+              />
+              <OnboardingStep
+                step={3}
+                icon={Scale}
+                title="Concilie"
+                description="Vincule transações às contas"
+                href="/financeiro/conciliacao"
+              />
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* KPI Cards */}
       <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -176,6 +214,29 @@ const KPICard = ({ icon: Icon, label, value, isLoading, colorClass, onClick }: K
       </p>
     )}
   </Card>
+);
+
+interface OnboardingStepProps {
+  step: number;
+  icon: React.ElementType;
+  title: string;
+  description: string;
+  href: string;
+}
+
+const OnboardingStep = ({ step, icon: Icon, title, description, href }: OnboardingStepProps) => (
+  <Link to={href} className="group">
+    <div className="flex items-start gap-3 p-4 rounded-lg border bg-background hover:border-primary/50 transition-colors">
+      <div className="flex-shrink-0 w-8 h-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-sm font-bold">
+        {step}
+      </div>
+      <div className="flex-1 min-w-0">
+        <p className="font-medium text-foreground text-sm">{title}</p>
+        <p className="text-xs text-muted-foreground mt-0.5">{description}</p>
+      </div>
+      <ArrowRight className="h-4 w-4 text-muted-foreground group-hover:text-primary transition-colors mt-1" />
+    </div>
+  </Link>
 );
 
 export default Index;
