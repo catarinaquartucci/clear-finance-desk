@@ -54,6 +54,7 @@ interface AppPreferencesState {
 }
 
 interface AppPreferencesContextType extends AppPreferencesState {
+  setSelectedCompanyId: (id: string) => void;
   setFinancialYear: (year: string) => void;
   setFinancialMonth: (month: string) => void;
   setAnalysisMonth: (month: string) => void;
@@ -95,6 +96,7 @@ const defaultApprovalFilters: ApprovalFilters = {
 const getDefaultState = (): AppPreferencesState => {
   const currentDate = new Date();
   return {
+    selectedCompanyId: "all",
     financialYear: currentDate.getFullYear().toString(),
     financialMonth: "all",
     analysisMonth: format(currentDate, 'yyyy-MM-01'),
