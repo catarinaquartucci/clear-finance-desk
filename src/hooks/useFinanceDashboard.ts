@@ -62,14 +62,15 @@ export const useFinanceDashboard = (companyId: string = "all") => {
   const todayStr = format(today, "yyyy-MM-dd");
 
   return useQuery({
-    queryKey: ["finance-dashboard", monthStart],
+    queryKey: ["finance-dashboard", monthStart, effectiveCompanyId],
     queryFn: async () => {
       // 1. Bank accounts balance + detail
-      const { data: accounts } = await supabase
+      let accountsQuery = supabase
         .from("bank_accounts")
         .select("name, bank_name, current_balance")
-        .eq("company_id", VANTARI_ID)
         .eq("active", true);
+      accountsQuery = applyCompanyFilter(accountsQuery, effectiveCompanyId);
+      const { data: accounts } = await accountsQuery;
 
       const bankAccountsDetail: BankAccountDetail[] = (accounts || []).map(a => ({
         name: a.name,
@@ -81,11 +82,12 @@ export const useFinanceDashboard = (companyId: string = "all") => {
         (sum, a) => sum + a.current_balance, 0
       );
 
-      // 2. Get Vantari account IDs for transactions
-      const { data: accountIds } = await supabase
+      // 2. Get account IDs for transactions
+      let accountIdsQuery = supabase
         .from("bank_accounts")
-        .select("id")
-        .eq("company_id", VANTARI_ID);
+        .select("id");
+      accountIdsQuery = applyCompanyFilter(accountIdsQuery, effectiveCompanyId);
+      const { data: accountIds } = await accountIdsQuery;
 
       const ids = (accountIds || []).map(a => a.id);
 
@@ -122,13 +124,14 @@ export const useFinanceDashboard = (companyId: string = "all") => {
       saidasDetail.sort((a, b) => b.date.localeCompare(a.date));
 
       // 3. Payable alerts: overdue + due in 7 days
-      const { data: alertPayables } = await supabase
+      let alertQuery = supabase
         .from("payables")
         .select("id, description, amount, due_date, status, supplier_id, suppliers:supplier_id(name)")
-        .eq("company_id", VANTARI_ID)
         .in("status", ["open", "overdue"])
         .lte("due_date", in7Days)
         .order("due_date", { ascending: true });
+      alertQuery = applyCompanyFilter(alertQuery, effectiveCompanyId);
+      const { data: alertPayables } = await alertQuery;
 
       const payableAlerts: PayableAlert[] = (alertPayables || []).map((p: any) => ({
         id: p.id,
@@ -147,12 +150,13 @@ export const useFinanceDashboard = (companyId: string = "all") => {
         .reduce((s, p) => s + p.amount, 0);
 
       // 4. Expense composition (current month payables by notes)
-      const { data: monthPayables } = await supabase
+      let monthPayQuery = supabase
         .from("payables")
         .select("amount, notes")
-        .eq("company_id", VANTARI_ID)
         .gte("due_date", monthStart)
         .lte("due_date", monthEnd);
+      monthPayQuery = applyCompanyFilter(monthPayQuery, effectiveCompanyId);
+      const { data: monthPayables } = await monthPayQuery;
 
       const categoryMap = new Map<string, number>();
       (monthPayables || []).forEach(p => {
@@ -176,12 +180,13 @@ export const useFinanceDashboard = (companyId: string = "all") => {
         .gte("due_date", todayStr)
         .lte("due_date", in30Days);
 
-      const { data: openPayables } = await supabase
+      let openPayQuery = supabase
         .from("payables")
         .select("amount")
-        .eq("company_id", VANTARI_ID)
         .in("status", ["open", "overdue"])
         .lte("due_date", in30Days);
+      openPayQuery = applyCompanyFilter(openPayQuery, effectiveCompanyId);
+      const { data: openPayables } = await openPayQuery;
 
       const receitaPrevista = (openReceivables || []).reduce(
         (s, r) => s + Number(r.amount || 0), 0
