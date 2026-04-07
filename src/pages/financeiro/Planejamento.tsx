@@ -42,7 +42,8 @@ const Planejamento = () => {
     financialYear: selectedYear, 
     setFinancialYear: setSelectedYear,
     financialMonth: selectedMonth,
-    setFinancialMonth: setSelectedMonth
+    setFinancialMonth: setSelectedMonth,
+    selectedCompanyId,
   } = useAppPreferences();
   const [insightsOpen, setInsightsOpen] = useState(false);
   const { planningData, isLoading, upsertPlanning, upsertPlanningBatch } = useMonthlyPlanning();
