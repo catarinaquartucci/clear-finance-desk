@@ -1,3 +1,4 @@
+import { useMemo } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend } from "recharts";
 
@@ -11,6 +12,9 @@ interface ExpenseBreakdownPieProps {
   data: CompositionData[];
   title?: string;
 }
+
+const MAX_SLICES = 7;
+const OTHERS_COLOR = "hsl(var(--muted-foreground))";
 
 const formatCurrency = (value: number) =>
   new Intl.NumberFormat('pt-BR', { 
@@ -37,6 +41,18 @@ const renderCustomizedLabel = ({ cx, cy, midAngle, innerRadius, outerRadius, per
 export const ExpenseBreakdownPie = ({ data, title = "Composição de Despesas" }: ExpenseBreakdownPieProps) => {
   const total = data.reduce((acc, item) => acc + item.value, 0);
 
+  const chartData = useMemo(() => {
+    if (data.length <= MAX_SLICES) return data;
+    const sorted = [...data].sort((a, b) => b.value - a.value);
+    const top = sorted.slice(0, MAX_SLICES - 1);
+    const rest = sorted.slice(MAX_SLICES - 1);
+    const othersValue = rest.reduce((acc, item) => acc + item.value, 0);
+    return [
+      ...top,
+      { name: `Outros (${rest.length})`, value: othersValue, fill: OTHERS_COLOR },
+    ];
+  }, [data]);
+
   if (data.length === 0 || total === 0) {
     return (
       <Card>
@@ -60,7 +76,7 @@ export const ExpenseBreakdownPie = ({ data, title = "Composição de Despesas" }
           <ResponsiveContainer width="100%" height="100%">
             <PieChart>
               <Pie
-                data={data}
+                data={chartData}
                 cx="50%"
                 cy="50%"
                 labelLine={false}
@@ -68,7 +84,7 @@ export const ExpenseBreakdownPie = ({ data, title = "Composição de Despesas" }
                 outerRadius={80}
                 dataKey="value"
               >
-                {data.map((entry, index) => (
+                {chartData.map((entry, index) => (
                   <Cell key={`cell-${index}`} fill={entry.fill} />
                 ))}
               </Pie>
@@ -81,7 +97,7 @@ export const ExpenseBreakdownPie = ({ data, title = "Composição de Despesas" }
                 }}
               />
               <Legend 
-                formatter={(value, entry: any) => (
+                formatter={(value) => (
                   <span className="text-xs text-foreground">{value}</span>
                 )}
               />
@@ -90,7 +106,7 @@ export const ExpenseBreakdownPie = ({ data, title = "Composição de Despesas" }
         </div>
         <div className="mt-2 text-center">
           <p className="text-sm text-muted-foreground">Total</p>
-          <p className="text-lg font-bold text-red-600">{formatCurrency(total)}</p>
+          <p className="text-lg font-bold text-destructive">{formatCurrency(total)}</p>
         </div>
       </CardContent>
     </Card>

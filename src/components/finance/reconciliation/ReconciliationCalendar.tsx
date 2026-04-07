@@ -1,5 +1,8 @@
 import { useMemo } from "react";
 import { cn } from "@/lib/utils";
+import { useIsMobile } from "@/hooks/use-mobile";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { ChevronDown } from "lucide-react";
 import type { BankTransaction } from "@/hooks/useBankTransactions";
 
 interface DayData {
@@ -20,9 +23,14 @@ interface Props {
 
 const WEEKDAYS = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"];
 
+const fmt = (v: number) =>
+  new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(v);
+
 export const ReconciliationCalendar = ({
   year, month, transactions, selectedDay, onSelectDay,
 }: Props) => {
+  const isMobile = useIsMobile();
+
   const dayMap = useMemo(() => {
     const map = new Map<number, DayData>();
     for (const t of transactions) {
@@ -44,13 +52,82 @@ export const ReconciliationCalendar = ({
   const today = new Date();
   const isCurrentMonth = today.getFullYear() === year && today.getMonth() + 1 === month;
 
+  // Mobile: list view showing only days with transactions
+  if (isMobile) {
+    const daysWithData = Array.from(dayMap.entries())
+      .sort(([a], [b]) => a - b);
+
+    if (daysWithData.length === 0) {
+      return (
+        <div className="border rounded-lg p-6 text-center text-muted-foreground text-sm">
+          Nenhuma movimentação neste mês
+        </div>
+      );
+    }
+
+    return (
+      <div className="space-y-2">
+        {daysWithData.map(([day, data]) => {
+          const isSelected = selectedDay === day;
+          const isToday = isCurrentMonth && today.getDate() === day;
+          const hasPending = data.pending > 0;
+          const allConciliated = data.total > 0 && data.pending === 0;
+          const dayOfWeek = WEEKDAYS[new Date(year, month - 1, day).getDay()];
+
+          return (
+            <Collapsible key={day} open={isSelected} onOpenChange={() => onSelectDay(day)}>
+              <CollapsibleTrigger asChild>
+                <button
+                  className={cn(
+                    "w-full flex items-center justify-between rounded-lg border p-3 transition-colors",
+                    isSelected && "bg-primary/10 border-primary",
+                    !isSelected && hasPending && "bg-amber-500/5 border-amber-500/20",
+                    !isSelected && allConciliated && "bg-emerald-500/5 border-emerald-500/20",
+                  )}
+                >
+                  <div className="flex items-center gap-3">
+                    <div className={cn(
+                      "w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold",
+                      isToday ? "bg-primary text-primary-foreground" : "bg-muted",
+                    )}>
+                      {day}
+                    </div>
+                    <div className="text-left">
+                      <span className="text-xs text-muted-foreground">{dayOfWeek}</span>
+                      <div className="flex items-center gap-2">
+                        <span className={cn(
+                          "w-1.5 h-1.5 rounded-full",
+                          hasPending ? "bg-amber-500" : "bg-emerald-500"
+                        )} />
+                        <span className="text-xs text-muted-foreground">{data.total} mov.</span>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <div className="text-right">
+                      {data.credits > 0 && (
+                        <p className="text-xs text-emerald-600 font-mono">+{fmt(data.credits)}</p>
+                      )}
+                      {data.debits > 0 && (
+                        <p className="text-xs text-destructive font-mono">-{fmt(data.debits)}</p>
+                      )}
+                    </div>
+                    <ChevronDown className={cn("h-4 w-4 text-muted-foreground transition-transform", isSelected && "rotate-180")} />
+                  </div>
+                </button>
+              </CollapsibleTrigger>
+            </Collapsible>
+          );
+        })}
+      </div>
+    );
+  }
+
+  // Desktop: calendar grid
   const cells: (number | null)[] = [];
   for (let i = 0; i < firstDayOfWeek; i++) cells.push(null);
   for (let d = 1; d <= daysInMonth; d++) cells.push(d);
   while (cells.length % 7 !== 0) cells.push(null);
-
-  const fmt = (v: number) =>
-    new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(v);
 
   return (
     <div className="border rounded-lg overflow-hidden">
