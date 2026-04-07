@@ -4,6 +4,14 @@ import { format, addDays, startOfMonth, endOfMonth } from "date-fns";
 
 const VANTARI_ID = "3d37326f-bedc-4a16-b81f-0213c826d423";
 
+// Helper to apply optional company_id filter
+const applyCompanyFilter = (query: any, companyId: string, column = "company_id") => {
+  if (companyId && companyId !== "all") {
+    return query.eq(column, companyId);
+  }
+  return query;
+};
+
 export interface PayableAlert {
   id: string;
   description: string;
@@ -44,7 +52,8 @@ const EXPENSE_COLORS = [
   "#84cc16", "#06b6d4", "#a855f7", "#d946ef",
 ];
 
-export const useFinanceDashboard = () => {
+export const useFinanceDashboard = (companyId: string = "all") => {
+  const effectiveCompanyId = companyId || "all";
   const today = new Date();
   const monthStart = format(startOfMonth(today), "yyyy-MM-dd");
   const monthEnd = format(endOfMonth(today), "yyyy-MM-dd");
