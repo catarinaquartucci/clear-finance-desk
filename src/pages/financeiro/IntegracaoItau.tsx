@@ -178,7 +178,7 @@ export default function IntegracaoItau() {
                     </div>
                     <div className="text-sm flex items-center gap-2">
                       {c.ativo ? (
-                        <><CheckCircle2 className="h-4 w-4 text-green-600" /> Ativa</>
+                        <><CheckCircle2 className="h-4 w-4 text-primary" /> Ativa</>
                       ) : (
                         <><XCircle className="h-4 w-4 text-muted-foreground" /> Inativa</>
                       )}
@@ -373,7 +373,7 @@ export default function IntegracaoItau() {
                   }}
                 />
                 {form.cert_pem && (
-                  <p className="text-xs text-green-600 mt-1">✓ Certificado carregado ({form.cert_pem.length} chars)</p>
+                  <p className="text-xs text-primary mt-1">✓ Certificado carregado ({form.cert_pem.length} chars)</p>
                 )}
               </div>
               <div>
@@ -390,7 +390,7 @@ export default function IntegracaoItau() {
                   }}
                 />
                 {form.key_pem && (
-                  <p className="text-xs text-green-600 mt-1">✓ Chave carregada ({form.key_pem.length} chars)</p>
+                  <p className="text-xs text-primary mt-1">✓ Chave carregada ({form.key_pem.length} chars)</p>
                 )}
               </div>
             </div>
