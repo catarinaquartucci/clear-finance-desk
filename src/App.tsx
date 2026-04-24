@@ -48,6 +48,7 @@ const BoletosPage = lazy(() => import("./pages/financeiro/Boletos"));
 const CFODigital = lazy(() => import("./pages/financeiro/CFODigital"));
 const Simulador = lazy(() => import("./pages/financeiro/Simulador"));
 const ScannerDocumentos = lazy(() => import("./pages/financeiro/ScannerDocumentos"));
+const IntegracaoItau = lazy(() => import("./pages/financeiro/IntegracaoItau"));
 
 const queryClient = new QueryClient();
 
@@ -87,6 +88,7 @@ const App = () => (
                         <Route path="/financeiro/contas-pagar" element={<FinanceGuard><ContasPagar /></FinanceGuard>} />
                         <Route path="/financeiro/contas-receber" element={<FinanceGuard><ContasReceber /></FinanceGuard>} />
                         <Route path="/financeiro/conciliacao" element={<FinanceGuard><Conciliacao /></FinanceGuard>} />
+                        <Route path="/financeiro/integracao-itau" element={<FinanceGuard><IntegracaoItau /></FinanceGuard>} />
                         <Route path="/financeiro/planejamento" element={<FinanceGuard><Planejamento /></FinanceGuard>} />
                         <Route path="/financeiro/fluxo-caixa" element={<FinanceGuard><FluxoCaixa /></FinanceGuard>} />
                         <Route path="/financeiro/analise-financeira" element={<FinanceGuard><AnaliseFinanceira /></FinanceGuard>} />
