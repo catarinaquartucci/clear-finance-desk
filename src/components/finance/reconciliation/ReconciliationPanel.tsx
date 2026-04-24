@@ -1,7 +1,7 @@
 import { useState, useMemo, useEffect } from "react";
 import { format, subMonths, addMonths } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { Upload, Wand2, Clock, ChevronLeft, ChevronRight, FileSearch } from "lucide-react";
+import { Upload, Wand2, Clock, ChevronLeft, ChevronRight, FileSearch, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
@@ -10,6 +10,7 @@ import { Separator } from "@/components/ui/separator";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useBankAccounts } from "@/hooks/useBankAccounts";
 import { useBankTransactions } from "@/hooks/useBankTransactions";
+import { useItauCredentials } from "@/hooks/useItauCredentials";
 import { usePayables } from "@/hooks/usePayables";
 import { useReceivables } from "@/hooks/useReceivables";
 import { ImportStatementDialog } from "./ImportStatementDialog";
@@ -25,6 +26,7 @@ export const ReconciliationPanel = () => {
   const { hasFinanceViewOnly } = useAuth();
   const { selectedCompanyId } = useAppPreferences();
   const { data: bankAccounts } = useBankAccounts(selectedCompanyId);
+  const { credentials: itauCredentials, syncNow: itauSyncNow } = useItauCredentials();
   const [selectedAccount, setSelectedAccount] = useState<string>(() => sessionStorage.getItem("reconciliation_account") || "");
   const [selectedMonth, setSelectedMonth] = useState(() => {
     const saved = sessionStorage.getItem("reconciliation_month");
@@ -173,6 +175,20 @@ export const ReconciliationPanel = () => {
             <Button onClick={() => setImportOpen(true)} disabled={!selectedAccount}>
               <Upload className="w-4 h-4 mr-1" /> Importar Extrato
             </Button>
+            {(() => {
+              const cred = itauCredentials?.find((c) => c.bank_account_id === selectedAccount && c.ativo);
+              if (!cred) return null;
+              return (
+                <Button
+                  variant="outline"
+                  onClick={() => itauSyncNow.mutate({ credential_id: cred.id, days: 7 })}
+                  disabled={itauSyncNow.isPending}
+                >
+                  <RefreshCw className={`w-4 h-4 mr-1 ${itauSyncNow.isPending ? "animate-spin" : ""}`} />
+                  Atualizar do banco
+                </Button>
+              );
+            })()}
           </div>
         </>
       )}
