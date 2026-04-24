@@ -69,7 +69,7 @@ interface SyncResult {
 }
 
 async function syncCredential(
-  admin: ReturnType<typeof createClient>,
+  admin: any,
   credential: any,
   days: number,
   triggeredBy: string,
