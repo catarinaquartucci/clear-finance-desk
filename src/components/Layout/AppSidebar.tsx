@@ -26,6 +26,7 @@ import {
   Monitor,
   Zap,
   Settings,
+  Landmark,
 } from "lucide-react";
 
 import {
@@ -47,6 +48,7 @@ const operacionalItems = [
   { icon: HandCoins, label: "Contas a Receber", path: "/financeiro/contas-receber" },
   { icon: Scale, label: "Conciliação", path: "/financeiro/conciliacao" },
   { icon: Barcode, label: "Boletos", path: "/financeiro/boletos" },
+  { icon: Landmark, label: "Integração Itaú", path: "/financeiro/integracao-itau" },
 ];
 
 const planejamentoItems = [
