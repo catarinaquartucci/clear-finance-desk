@@ -1202,6 +1202,116 @@ export type Database = {
           },
         ]
       }
+      itau_credentials: {
+        Row: {
+          agencia: string
+          ativo: boolean
+          bank_account_id: string
+          client_id: string
+          company_id: string | null
+          conta: string
+          created_at: string
+          environment: string
+          id: string
+          last_sync_at: string | null
+          updated_at: string
+        }
+        Insert: {
+          agencia: string
+          ativo?: boolean
+          bank_account_id: string
+          client_id: string
+          company_id?: string | null
+          conta: string
+          created_at?: string
+          environment?: string
+          id?: string
+          last_sync_at?: string | null
+          updated_at?: string
+        }
+        Update: {
+          agencia?: string
+          ativo?: boolean
+          bank_account_id?: string
+          client_id?: string
+          company_id?: string | null
+          conta?: string
+          created_at?: string
+          environment?: string
+          id?: string
+          last_sync_at?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "itau_credentials_bank_account_id_fkey"
+            columns: ["bank_account_id"]
+            isOneToOne: true
+            referencedRelation: "bank_accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "itau_credentials_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "group_companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      itau_sync_log: {
+        Row: {
+          created_at: string
+          credential_id: string | null
+          error_message: string | null
+          finished_at: string | null
+          id: string
+          period_from: string | null
+          period_to: string | null
+          started_at: string
+          status: string
+          transactions_imported: number
+          transactions_skipped: number
+          triggered_by: string | null
+        }
+        Insert: {
+          created_at?: string
+          credential_id?: string | null
+          error_message?: string | null
+          finished_at?: string | null
+          id?: string
+          period_from?: string | null
+          period_to?: string | null
+          started_at?: string
+          status?: string
+          transactions_imported?: number
+          transactions_skipped?: number
+          triggered_by?: string | null
+        }
+        Update: {
+          created_at?: string
+          credential_id?: string | null
+          error_message?: string | null
+          finished_at?: string | null
+          id?: string
+          period_from?: string | null
+          period_to?: string | null
+          started_at?: string
+          status?: string
+          transactions_imported?: number
+          transactions_skipped?: number
+          triggered_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "itau_sync_log_credential_id_fkey"
+            columns: ["credential_id"]
+            isOneToOne: false
+            referencedRelation: "itau_credentials"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       marvee_category_mapping: {
         Row: {
           cash_flow_category_code: string
